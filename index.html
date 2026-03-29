@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>GreenFarm — Environment Awareness Game</title>
+    <meta
+      name="description"
+      content="A top-down farm environment awareness game. Clean up pollution, save the farm!"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- HUD -->
+    <div id="hud">
+      <div id="tasks-container">
+        <span class="label">📋 Tasks</span>
+        <div
+          id="task-trash"
+          style="font-size: 14px; margin-top: 5px; font-weight: bold"
+        >
+          - Throw Trash in Bin: 0/3
+        </div>
+        <div
+          id="task-plant"
+          style="font-size: 14px; margin-top: 5px; font-weight: bold"
+        >
+          - Plant Trees: 0/3
+        </div>
+        <div
+          id="task-house"
+          style="font-size: 14px; margin-top: 5px; font-weight: bold"
+        >
+          - Build Mud House: 0/1
+        </div>
+        <div
+          id="task-solar"
+          style="font-size: 14px; margin-top: 5px; font-weight: bold"
+        >
+          - Install Solar Panel: 0/1
+        </div>
+        <div
+          id="inventory"
+          style="
+            font-size: 14px;
+            margin-top: 5px;
+            color: #facc15;
+            font-weight: bold;
+          "
+        >
+          🎒 Missing: Nothing
+        </div>
+      </div>
+    </div>
+
+    <div id="stats">
+      <span id="score-display">⭐ Score: 0</span>
+      <span id="actions-display">✅ Cleaned: 0</span>
+    </div>
+
+    <!-- Interaction hint -->
+    <div id="interaction-hint">Press <strong>E</strong> to interact</div>
+
+    <!-- Main canvas -->
+    <canvas id="game"></canvas>
+
+    <!-- Minimap -->
+    <canvas id="minimap"></canvas>
+
+    <!-- Shop UI -->
+    <div
+      id="shop-icon"
+      style="
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        z-index: 1000;
+        cursor: pointer;
+        width: 64px;
+        height: 64px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid #facc15;
+      "
+    >
+      <img
+        src="assets/shop/shop_icon.webp"
+        alt="Shop"
+        style="width: 48px; height: 48px; border-radius: 50%"
+      />
+      <span
+        style="
+          position: absolute;
+          top: -10px;
+          right: -10px;
+          background: red;
+          color: white;
+          border-radius: 10px;
+          padding: 2px 6px;
+          font-size: 12px;
+          font-weight: bold;
+          border: 2px solid white;
+          display: none;
+        "
+        id="shop-badge"
+        >!</span
+      >
+    </div>
+
+    <div
+      id="shop-modal"
+      style="
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80%;
+        max-width: 600px;
+        max-height: 80%;
+        background: #fff;
+        z-index: 2000;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        overflow-y: auto;
+        padding: 20px;
+      "
+    >
+      <h2
+        style="
+          margin-top: 0;
+          color: #166534;
+          font-size: 24px;
+          border-bottom: 2px solid #e5e7eb;
+          padding-bottom: 10px;
+          display: flex;
+          justify-content: space-between;
+        "
+      >
+        <span>🌱 Green Shop</span>
+        <button
+          id="close-shop"
+          style="
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            cursor: pointer;
+          "
+        >
+          ✕
+        </button>
+      </h2>
+      <div
+        id="shop-items"
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 15px;
+          margin-top: 20px;
+        "
+      >
+        <!-- Items will be populated here -->
+      </div>
+    </div>
+
+    <!-- Mobile touch controls -->
+    <div id="touch-controls">
+      <div id="joystick-zone">
+        <div id="joystick-base"></div>
+        <div id="joystick-thumb"></div>
+      </div>
+      <div id="btn-interact">E</div>
+      <div id="btn-zoom-in">+</div>
+      <div id="btn-zoom-out">−</div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay">
+      <h1 id="overlay-title"></h1>
+      <p id="overlay-msg"></p>
+      <button onclick="Game.restart()">Play Again</button>
+    </div>
+
+    <!-- Scripts (order matters: config → utils → subsystems → renderer → game) -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/camera.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/objects.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/shop.js"></script>
+    <script src="js/game.js"></script>
+    <script>
+      Game.init();
+    </script>
+  </body>
+</html>

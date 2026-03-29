@@ -1,0 +1,747 @@
+/* ══════════════════════════════════════════════════════════
+   GreenFarm — Renderer  (all draw logic)
+   ══════════════════════════════════════════════════════════ */
+
+const Renderer = (() => {
+  let ctx, miniCtx, miniW, miniH;
+  let groundPattern = null;
+  let treeImages = [];
+  let factoryImages = [];
+  let waterPatterns = [];
+  let garbageBagImg = new Image();
+  let trashCanImg = new Image();
+  let windmillBaseImg = new Image();
+  let windmillFanImg = new Image();
+  let roadImgs = { horiz: new Image(), vert: new Image() };
+
+  let house1Img = new Image();
+  let house2Img = new Image();
+  let carImg = new Image();
+  let fenceImg = new Image();
+
+  function init(mainCtx, mCtx, mw, mh) {
+    ctx = mainCtx;
+    miniCtx = mCtx;
+    miniW = mw;
+    miniH = mh;
+
+    // Load grass texture pattern
+    const grassImg = new Image();
+    // Assuming you have grass/Cartoon_green_texture_grass.jpg based on terminal output
+    grassImg.src = "assets/grass/Cartoon_green_texture_grass.jpg";
+    grassImg.onload = () => {
+      groundPattern = ctx.createPattern(grassImg, "repeat"); // Scale down the grass pattern since the original image is large
+      const scale = 0.0525;
+      groundPattern.setTransform(new DOMMatrix().scale(scale, scale));
+    };
+
+    // Load tree images
+    for (let i = 1; i <= 3; i++) {
+      const img = new Image();
+      img.src = `assets/tree/Tree ${i}.png`;
+      treeImages.push(img);
+    }
+
+    // Load factory images
+    for (let i = 1; i <= 3; i++) {
+      const img = new Image();
+      img.src = `assets/factory/factory ${i}.png`;
+      factoryImages.push(img);
+    }
+
+    garbageBagImg.src = "assets/garbage/garbage bag.png";
+    trashCanImg.src = "assets/garbage/trash can.png";
+    windmillBaseImg.src = "assets/windmill/windmill_nofan.png";
+    windmillFanImg.src = "assets/windmill/fan.png";
+
+    // Load road patterns
+    roadImgs.horiz.src = "assets/road/road_horizontal.png";
+    roadImgs.vert.src = "assets/road/road_vertical.png";
+
+    house1Img.src = "assets/house/house 1.png";
+    house2Img.src = "assets/house/house 2.png";
+    carImg.src = "assets/house/car.png";
+    fenceImg.src = "assets/house/fence.png";
+
+    // Load water images
+    const waterFiles = ["still.png", "flow.png", "more flow.png"];
+    waterFiles.forEach((file, index) => {
+      const img = new Image();
+      img.src = `assets/water/${file}`;
+      img.onload = () => {
+        const pat = ctx.createPattern(img, "repeat");
+        // Scale down pattern incase it is too large
+        pat.setTransform(new DOMMatrix().scale(0.8, 0.8));
+        waterPatterns[index] = pat;
+      };
+      waterPatterns[index] = null;
+    });
+  }
+
+  /* ── Main draw ──────────────────────────────────────── */
+  function draw(gameState, vw, vh) {
+    const t = gameState.pollution / 100;
+
+    // Apply camera + zoom
+    Camera.applyTransform(ctx);
+
+    drawGround(t);
+    drawPaths(t);
+    drawTrees(t);
+    drawAnimals(t);
+    drawInteractables(t);
+    drawBuildings();
+    drawBorders();
+    drawParticles();
+    drawPlayer(gameState);
+
+    // Reset to screen space
+    Camera.resetTransform(ctx);
+
+    // HUD is handled in DOM
+    updateHUD(gameState);
+    drawMinimap(t, vw, vh);
+  }
+
+  /* ── Ground ─────────────────────────────────────────── */
+  function drawGround(t) {
+    if (groundPattern) {
+      // Draw textured grass ground
+      ctx.fillStyle = groundPattern;
+      ctx.fillRect(0, 0, CONFIG.WORLD_W, CONFIG.WORLD_H);
+
+      // If there is pollution, overlay a brownish tint
+      if (t > 0) {
+        ctx.fillStyle = `rgba(120, 85, 43, ${t * 0.85})`; // Darker brown alpha based on pollution
+        ctx.fillRect(0, 0, CONFIG.WORLD_W, CONFIG.WORLD_H);
+      }
+    } else {
+      // Fallback to solid color if image not loaded yet
+      ctx.fillStyle = Utils.lerpColor("#4ade80", "#78552b", t);
+      ctx.fillRect(0, 0, CONFIG.WORLD_W, CONFIG.WORLD_H);
+      if (t > 0.3) {
+        ctx.fillStyle = `rgba(60,30,0,${(t - 0.3) * 0.35})`;
+        ctx.fillRect(0, 0, CONFIG.WORLD_W, CONFIG.WORLD_H);
+      }
+    }
+
+    ctx.strokeStyle = "rgba(0,0,0,0.04)";
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx < CONFIG.WORLD_W; gx += 80) {
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, CONFIG.WORLD_H);
+      ctx.stroke();
+    }
+    for (let gy = 0; gy < CONFIG.WORLD_H; gy += 80) {
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(CONFIG.WORLD_W, gy);
+      ctx.stroke();
+    }
+  }
+
+  /* ── Paths ──────────────────────────────────────────── */
+  function drawPaths(t) {
+    const fallbackColor = Utils.lerpColor("#d6d3d1", "#78716c", t);
+
+    function drawTiled(img, isHoriz, x, y, w, h) {
+      if (!img || !img.complete || img.width === 0) {
+        ctx.fillStyle = fallbackColor;
+        ctx.fillRect(x, y, w, h);
+        return;
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip(); // Ensure we don't draw outside bounds
+
+      // Tile to maintain absolute aspect ratio
+      if (isHoriz) {
+        const scale = h / img.height;
+        const drawW = img.width * scale;
+        for (let curX = x; curX < x + w + 1; curX += drawW) {
+          ctx.drawImage(img, curX, y, drawW, h);
+        }
+      } else {
+        const scale = w / img.width;
+        const drawH = img.height * scale;
+        for (let curY = y; curY < y + h + 1; curY += drawH) {
+          ctx.drawImage(img, x, curY, w, drawH);
+        }
+      }
+      ctx.restore();
+    }
+
+    // Road width is widened to 140 for a better look
+    const ROAD_W = 140;
+
+    // Main horizontal road connecting farm to factory (Centers on y=350 -> 350-70=280)
+    drawTiled(roadImgs.horiz, true, 800, 280, 1600, ROAD_W);
+
+    // Path from farm buildings down (Centers on x=430 -> 430-70=360)
+    // Connects directly under the horizontal road y=280+140=420
+    drawTiled(roadImgs.vert, false, 360, 420, ROAD_W, 350);
+
+    // Main path down to the bridge/river crossing (Centers on x=1630 -> 1630-70=1560)
+    drawTiled(roadImgs.vert, false, 1560, 420, ROAD_W, 1030);
+    // Bridge details
+    ctx.fillStyle = "#451a03";
+    for (let w = 1450; w < 1630; w += 20) {
+      ctx.fillRect(1580, w, 100, 2);
+    }
+  }
+
+  /* ── Trees ──────────────────────────────────────────── */
+  function drawTrees(t) {
+    const alpha = Math.max(0, 1 - t * 1.5);
+    const numGenerationTrees = Objects.trees.filter(
+      (tr) => !tr.isPlanted,
+    ).length;
+    const visGeneration = Math.floor(numGenerationTrees * (1 - t));
+
+    let genCount = 0;
+
+    for (let i = 0; i < Objects.trees.length; i++) {
+      const tr = Objects.trees[i];
+
+      if (!tr.isPlanted) {
+        genCount++;
+        if (genCount > visGeneration) continue;
+      }
+
+      ctx.globalAlpha = tr.isPlanted ? 1 : alpha;
+
+      const img = treeImages[tr.type];
+      if (img && img.complete) {
+        // Draw the image. Center it around the target location.
+        // Assuming your images might be quite large, scale them down.
+        const treeWidth = 140;
+        const treeHeight = 180;
+
+        ctx.drawImage(
+          img,
+          tr.x - treeWidth / 2 + 30, // 30 is half of the hitbox width (60)
+          tr.y - treeHeight + 80, // offset upwards so the base matches the hitbox base (80)
+          treeWidth,
+          treeHeight,
+        );
+      } else {
+        // Fallback to simple shapes if images aren't loaded yet
+        ctx.fillStyle = "#92400e";
+        ctx.fillRect(tr.x + 20, tr.y + 40, 20, 40);
+        ctx.fillStyle = Utils.lerpColor("#16a34a", "#a16207", t);
+        ctx.beginPath();
+        ctx.arc(tr.x + 30, tr.y + 20, 36, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* ── Animals ────────────────────────────────────────── */
+  function drawAnimals(t) {
+    const vis = Math.floor(Objects.animals.length * (1 - t * 1.1));
+    for (let i = 0; i < Math.max(0, vis); i++) {
+      const a = Objects.animals[i];
+      ctx.globalAlpha = Math.max(0, 1 - t * 1.3);
+      if (a.type === "cow") {
+        ctx.fillStyle = "#f5f5f4";
+        ctx.fillRect(a.x, a.y, 34, 22);
+        ctx.fillStyle = "#1c1917";
+        ctx.fillRect(a.x + 5, a.y + 4, 10, 7);
+        ctx.fillRect(a.x + 20, a.y + 10, 7, 6);
+        ctx.fillStyle = "#f5f5f4";
+        ctx.fillRect(a.x + 34, a.y + 2, 12, 12);
+        ctx.fillStyle = "#1c1917";
+        ctx.fillRect(a.x + 42, a.y + 5, 3, 3);
+      } else {
+        ctx.fillStyle = "#fbbf24";
+        ctx.beginPath();
+        ctx.arc(a.x + 10, a.y + 10, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ea580c";
+        ctx.beginPath();
+        ctx.moveTo(a.x + 20, a.y + 8);
+        ctx.lineTo(a.x + 28, a.y + 11);
+        ctx.lineTo(a.x + 20, a.y + 14);
+        ctx.fill();
+        ctx.fillStyle = "#1c1917";
+        ctx.fillRect(a.x + 13, a.y + 6, 3, 3);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* ── Interactables ──────────────────────────────────── */
+  function drawInteractables(t) {
+    for (const obj of Objects.interactables) {
+      drawSingleInteractable(obj, t);
+    }
+  }
+
+  function drawSingleInteractable(obj, t) {
+    const cx = obj.x + obj.w / 2;
+    const cy = obj.y + obj.h / 2;
+    const now = Date.now();
+
+    switch (obj.type) {
+      case "factory":
+        // t is pollution from 0 to 1
+        let fIdx = 0;
+        if (t > 0.33 && t <= 0.66) fIdx = 1;
+        if (t > 0.66) fIdx = 2;
+
+        const fImg = factoryImages[fIdx];
+        if (fImg && fImg.complete) {
+          // Adjust sizing depending on PNG dimensions.
+          // The PNG probably needs a bit more height for smokestacks.
+          const fw = obj.w * 1.5;
+          const fh = obj.h * 2.0;
+          ctx.drawImage(
+            fImg,
+            cx - fw / 2,
+            obj.y + obj.h - fh, // Base aligns with the bottom of the hitbox
+            fw,
+            fh,
+          );
+        } else {
+          // Fallback shapes
+          ctx.fillStyle = "#57534e";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.fillStyle = "#44403c";
+          ctx.fillRect(obj.x + 20, obj.y - 40, 22, 40);
+          ctx.fillRect(obj.x + obj.w - 42, obj.y - 40, 22, 40);
+          ctx.fillStyle = "#fbbf24";
+          for (let i = 0; i < 3; i++)
+            ctx.fillRect(obj.x + 14 + i * 38, obj.y + 30, 20, 14);
+          ctx.fillStyle = "#292524";
+          ctx.fillRect(obj.x + obj.w / 2 - 14, obj.y + obj.h - 46, 28, 46);
+        }
+        break;
+
+      case "trashcan":
+        if (trashCanImg && trashCanImg.complete) {
+          // Keep aspect ratio roughly, or just fit to box
+          ctx.drawImage(trashCanImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#333";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+        break;
+
+      case "windmill":
+        if (windmillBaseImg && windmillBaseImg.complete) {
+          // You might need to adjust aspect ratio, stretching to obj bounds for now
+          ctx.drawImage(windmillBaseImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#ccc";
+          ctx.fillRect(obj.x + 20, obj.y + 20, obj.w - 40, obj.h - 20);
+        }
+
+        if (windmillFanImg && windmillFanImg.complete) {
+          ctx.save();
+          // Calculate the pivot point. Usually top-center of the base.
+          const pivotX = cx;
+          const pivotY = obj.y + obj.h * 0.35; // Adjust this if the fan attaches lower/higher
+
+          ctx.translate(pivotX, pivotY);
+
+          if (obj.isOn) {
+            // Rotate continuously. 3000ms for a full rotation.
+            ctx.rotate(((now % 3000) / 3000) * Math.PI * 2);
+          }
+
+          const fanSizeH = obj.w * 1.5; // base height for fan
+          const aspect = windmillFanImg.width / windmillFanImg.height;
+          const fanSizeW = fanSizeH * aspect;
+
+          ctx.drawImage(
+            windmillFanImg,
+            -fanSizeW / 2,
+            -fanSizeH / 2,
+            fanSizeW,
+            fanSizeH,
+          );
+
+          ctx.restore();
+        }
+        break;
+
+      case "trashbag":
+        if (!obj.active) break; // Don't draw if picked up
+        if (garbageBagImg && garbageBagImg.complete) {
+          ctx.drawImage(garbageBagImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#111";
+          ctx.beginPath();
+          ctx.arc(cx, cy, obj.w / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+
+      case "trash":
+        ctx.fillStyle = "#a1a1aa";
+        ctx.fillRect(obj.x, obj.y + 10, obj.w, obj.h - 10);
+        ctx.fillStyle = "#71717a";
+        ctx.fillRect(obj.x + 8, obj.y, obj.w - 16, 18);
+        ctx.fillStyle = "#52525b";
+        ctx.fillRect(obj.x + 5, obj.y + 20, 15, 10);
+        ctx.fillRect(obj.x + 30, obj.y + 15, 20, 12);
+        break;
+
+      case "oil_spill":
+        ctx.fillStyle = `rgba(28,25,23,${0.7 + Math.sin(now / 800) * 0.1})`;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, obj.w / 2 + 10, obj.h / 2 + 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = `rgba(168,85,247,${0.2 + Math.sin(now / 400) * 0.1})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(cx - 5, cy - 3, obj.w / 3, obj.h / 3, 0.3, 0, Math.PI * 2);
+        ctx.stroke();
+        break;
+
+      case "burning_waste":
+        ctx.fillStyle = "#78716c";
+        ctx.fillRect(obj.x + 5, obj.y + 20, obj.w - 10, obj.h - 20);
+        const fh = 20 + Math.sin(now / 150) * 8;
+        ctx.fillStyle = "#f97316";
+        ctx.beginPath();
+        ctx.moveTo(obj.x + 10, obj.y + 20);
+        ctx.lineTo(cx, obj.y + 20 - fh);
+        ctx.lineTo(obj.x + obj.w - 10, obj.y + 20);
+        ctx.fill();
+        ctx.fillStyle = "#facc15";
+        ctx.beginPath();
+        ctx.moveTo(obj.x + 15, obj.y + 20);
+        ctx.lineTo(cx, obj.y + 20 - fh * 0.6);
+        ctx.lineTo(obj.x + obj.w - 15, obj.y + 20);
+        ctx.fill();
+        break;
+
+      case "river":
+        let wIdx = 0;
+        if (t > 0.33 && t <= 0.66) wIdx = 1;
+        if (t > 0.66) wIdx = 2;
+
+        ctx.beginPath();
+        ctx.roundRect(obj.x, obj.y, obj.w, obj.h, 14);
+
+        // 1) Fill base color to hide any grass through transparency
+        ctx.fillStyle = Utils.lerpColor("#38bdf8", "#6b5b3e", t);
+        ctx.fill();
+
+        // 2) Overlay the pattern
+        if (waterPatterns && waterPatterns[wIdx]) {
+          ctx.fillStyle = waterPatterns[wIdx];
+          const timeOffset = -(now / 50) % 1000;
+          // Apply moving scroll based on pollution level
+          waterPatterns[wIdx].setTransform(
+            new DOMMatrix().scale(0.8, 0.8).translate(timeOffset, 0),
+          );
+          ctx.fill();
+        }
+
+        ctx.strokeStyle = `rgba(255,255,255,${0.2 - t * 0.16})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < Math.floor(obj.w / 55); i++) {
+          const sx = obj.x + 20 + i * 55,
+            wy = obj.y + 30 + Math.sin(now / 500 + i) * 8;
+          ctx.beginPath();
+          ctx.moveTo(sx, wy);
+          ctx.lineTo(sx + 28, wy);
+          ctx.stroke();
+        }
+        for (let i = 0; i < Math.floor(obj.w / 55); i++) {
+          const sx = obj.x + 40 + i * 55,
+            wy = obj.y + 75 + Math.sin(now / 500 + i + 2) * 8;
+          ctx.beginPath();
+          ctx.moveTo(sx, wy);
+          ctx.lineTo(sx + 28, wy);
+          ctx.stroke();
+        }
+        break;
+
+      case "solar_panel":
+        if (obj.sprite) {
+          if (!obj._img) {
+            obj._img = new Image();
+            obj._img.src = obj.sprite;
+          }
+          if (obj._img.complete) {
+            ctx.drawImage(obj._img, obj.x, obj.y, obj.w, obj.h);
+            break;
+          }
+        }
+
+        ctx.fillStyle = "#1e3a5f";
+        ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        ctx.strokeStyle = "#60a5fa";
+        ctx.lineWidth = 1;
+        for (let i = 1; i < 4; i++) {
+          ctx.beginPath();
+          ctx.moveTo(obj.x + i * 25, obj.y);
+          ctx.lineTo(obj.x + i * 25, obj.y + obj.h);
+          ctx.stroke();
+        }
+        for (let i = 1; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(obj.x, obj.y + i * 20);
+          ctx.lineTo(obj.x + obj.w, obj.y + i * 20);
+          ctx.stroke();
+        }
+        ctx.fillStyle = `rgba(250,204,21,${0.15 + Math.sin(now / 600) * 0.1})`;
+        ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        break;
+
+      case "mud_house":
+        if (obj.sprite) {
+          if (!obj._img) {
+            obj._img = new Image();
+            obj._img.src = obj.sprite;
+          }
+          if (obj._img.complete) {
+            ctx.drawImage(obj._img, obj.x, obj.y, obj.w, obj.h);
+          }
+        } else {
+          ctx.fillStyle = "#92400e";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+        break;
+    }
+
+    // Label
+    ctx.fillStyle = "#fff";
+    ctx.font = "13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      obj.icon + " " + obj.type.replace(/_/g, " "),
+      cx,
+      obj.y + obj.h + 18,
+    );
+
+    // Proximity glow
+    const d = Utils.centreDist(Player.state, obj);
+    const ir = Objects.getInteractRadius(obj);
+    if (d < ir + 40) {
+      const ga = 0.25 + Math.sin(now / 300) * 0.1;
+      ctx.strokeStyle =
+        obj.pollRate > 0 ? `rgba(248,113,113,${ga})` : `rgba(74,222,128,${ga})`;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, ir, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (obj.timer > 0) {
+        ctx.strokeStyle = "rgba(255,255,255,.25)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(
+          cx,
+          cy,
+          Math.max(obj.w, obj.h) / 2 + 8,
+          -Math.PI / 2,
+          -Math.PI / 2 + (1 - obj.timer / obj.cooldown) * Math.PI * 2,
+        );
+        ctx.stroke();
+      }
+    }
+  }
+
+  /* ── Buildings (barn, shed) ─────────────────────────── */
+  function drawBuildings() {
+    // Draw building obstacles dynamically based on type
+    for (const obj of Objects.barriers) {
+      if (obj.type === "house1") {
+        if (house1Img.complete && house1Img.width > 0) {
+          ctx.drawImage(house1Img, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#b91c1c";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+      } else if (obj.type === "house2") {
+        if (house2Img.complete && house2Img.width > 0) {
+          ctx.drawImage(house2Img, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#78716c";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+      } else if (obj.type === "car") {
+        if (carImg.complete && carImg.width > 0) {
+          ctx.drawImage(carImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#2563eb";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+      }
+    }
+  }
+
+  /* ── Border fences ──────────────────────────────────── */
+  function drawBorders() {
+    ctx.fillStyle = "#78716c";
+    for (let i = 0; i < 4; i++) {
+      const b = Objects.barriers[i];
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+    }
+    ctx.fillStyle = "#a8a29e";
+    for (let fx = 0; fx < CONFIG.WORLD_W; fx += 80) {
+      ctx.fillRect(fx, 0, 6, 14);
+      ctx.fillRect(fx, CONFIG.WORLD_H - 14, 6, 14);
+    }
+    for (let fy = 0; fy < CONFIG.WORLD_H; fy += 80) {
+      ctx.fillRect(0, fy, 14, 6);
+      ctx.fillRect(CONFIG.WORLD_W - 14, fy, 14, 6);
+    }
+  }
+
+  /* ── Particles ──────────────────────────────────────── */
+  function drawParticles() {
+    for (const p of Particles.smoke) {
+      ctx.globalAlpha = p.life * p.alpha;
+      ctx.fillStyle = "#a8a29e";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    for (const r of Particles.ripples) {
+      ctx.globalAlpha = r.alpha;
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    for (const f of Particles.floats) {
+      ctx.globalAlpha = Math.max(0, f.life / 1.5);
+      ctx.fillStyle = f.color;
+      ctx.font = "bold 18px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(f.text, f.x, f.y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ── Player ─────────────────────────────────────────── */
+  function drawPlayer(gs) {
+    const p = Player.state;
+
+    const sprite = p.currentSprite;
+    if (!sprite) {
+      // Fallback plain shape if images aren't loaded yet
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x + p.w / 2, p.y + p.h / 2, p.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#1c1917";
+      ctx.fillRect(p.x + 11, p.y + 13, 5, 5);
+      ctx.fillRect(p.x + 24, p.y + 13, 5, 5);
+      return;
+    }
+
+    const cx = p.x + p.w / 2;
+    const cy = p.y + p.h / 2;
+
+    // Sprite scale might need adjustment depending on the PNG dimensions
+    // For a typical sprite sheet we'll scale it slightly larger than hit-box.
+    // Try adjusting 1.5 multiplier if your character looks too small or big.
+    const sc = 2.0;
+    const drawW = p.w * sc;
+    const drawH = p.h * sc;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    if (p.flipX) ctx.scale(-1, 1);
+
+    // Some sprites have empty transparent space near top/bottom,
+    // so we offset by half the drawn dimensions to center it.
+    ctx.drawImage(sprite, -drawW / 2, -drawH / 2, drawW, drawH);
+
+    ctx.restore();
+  }
+
+  /* ── HUD ────────────────────────────────────────────── */
+  function updateHUD(gs) {
+    const sc = document.getElementById("score-display");
+    const ac = document.getElementById("actions-display");
+    const taskTrash = document.getElementById("task-trash");
+    const inventory = document.getElementById("inventory");
+
+    if (sc) sc.textContent = "⭐ Score: " + gs.score;
+    if (ac) ac.textContent = "✅ Cleaned: " + gs.totalCleaned;
+
+    if (taskTrash && gs.tasks) {
+      taskTrash.textContent = `- Throw in Bin: ${gs.tasks.trashCollected}/${gs.tasks.trashRequired}`;
+      if (gs.tasks.trashCollected >= gs.tasks.trashRequired) {
+        taskTrash.style.color = "#4ade80"; // Checkmark color
+        taskTrash.textContent = `✅ Throw in Bin: Done!`;
+      }
+    }
+
+    if (inventory && gs.inventory) {
+      if (gs.inventory.trash > 0) {
+        inventory.textContent = `🎒 Carrying: ${gs.inventory.trash} Trash`;
+      } else {
+        inventory.textContent = `🎒 Carrying: Nothing`;
+      }
+    }
+  }
+
+  /* ── Minimap ────────────────────────────────────────── */
+  function drawMinimap(t, vw, vh) {
+    const s = CONFIG.MINI_SCALE;
+    miniCtx.fillStyle = Utils.lerpColor("#4ade80", "#78552b", t);
+    miniCtx.fillRect(0, 0, miniW, miniH);
+
+    for (const o of Objects.interactables) {
+      miniCtx.fillStyle = o.pollRate > 0 ? "#f87171" : "#38bdf8";
+      miniCtx.fillRect(
+        o.x * s,
+        o.y * s,
+        Math.max(o.w * s, 3),
+        Math.max(o.h * s, 3),
+      );
+    }
+
+    miniCtx.fillStyle = "#b91c1c";
+    miniCtx.fillRect(
+      Objects.barriers[4].x * s,
+      Objects.barriers[4].y * s,
+      Objects.barriers[4].w * s,
+      Objects.barriers[4].h * s,
+    );
+    miniCtx.fillStyle = "#78716c";
+    miniCtx.fillRect(
+      Objects.barriers[5].x * s,
+      Objects.barriers[5].y * s,
+      Objects.barriers[5].w * s,
+      Objects.barriers[5].h * s,
+    );
+
+    const vt = Math.floor(Objects.trees.length * (1 - t));
+    miniCtx.fillStyle = "#16a34a";
+    for (let i = 0; i < vt; i++)
+      miniCtx.fillRect(Objects.trees[i].x * s, Objects.trees[i].y * s, 2, 2);
+
+    miniCtx.fillStyle = "#facc15";
+    miniCtx.fillRect(Player.state.x * s - 2, Player.state.y * s - 2, 5, 5);
+
+    // Viewport rect (zoom-adjusted)
+    const visW = vw / Camera.zoom;
+    const visH = vh / Camera.zoom;
+    miniCtx.strokeStyle = "rgba(255,255,255,.6)";
+    miniCtx.lineWidth = 1;
+    miniCtx.strokeRect(Camera.x * s, Camera.y * s, visW * s, visH * s);
+  }
+
+  return { init, draw };
+})();
