@@ -18,6 +18,7 @@ const Renderer = (() => {
   let house2Img = new Image();
   let carImg = new Image();
   let fenceImg = new Image();
+  let petrolPumpImg = new Image();
 
   function init(mainCtx, mCtx, mw, mh) {
     ctx = mainCtx;
@@ -62,9 +63,18 @@ const Renderer = (() => {
     house2Img.src = "assets/house/house 2.png";
     carImg.src = "assets/house/car.png";
     fenceImg.src = "assets/house/fence.png";
+    petrolPumpImg.src = "assets/petrol_pump.png";
 
     // Load water images
-    const waterFiles = ["still.png", "flow.png", "more flow.png"];
+    const waterFiles = [
+      "water 1.png",
+      "water 2.png",
+      "water 3.png",
+      "water 4.png",
+      "water 5.png",
+      "water 6.png",
+      "water 7.png",
+    ];
     waterFiles.forEach((file, index) => {
       const img = new Image();
       img.src = `assets/water/${file}`;
@@ -422,9 +432,7 @@ const Renderer = (() => {
         break;
 
       case "river":
-        let wIdx = 0;
-        if (t > 0.33 && t <= 0.66) wIdx = 1;
-        if (t > 0.66) wIdx = 2;
+        let wIdx = Math.floor((now / 150) % 7);
 
         ctx.beginPath();
         ctx.roundRect(obj.x, obj.y, obj.w, obj.h, 14);
@@ -435,13 +443,15 @@ const Renderer = (() => {
 
         // 2) Overlay the pattern
         if (waterPatterns && waterPatterns[wIdx]) {
+          ctx.globalAlpha = 0.85; // Blend with base color
           ctx.fillStyle = waterPatterns[wIdx];
-          const timeOffset = -(now / 50) % 1000;
-          // Apply moving scroll based on pollution level
+          const timeOffset = -(now / 150) % 1000;
+          // Apply moving scroll
           waterPatterns[wIdx].setTransform(
-            new DOMMatrix().scale(0.8, 0.8).translate(timeOffset, 0),
+            new DOMMatrix().scale(4.0, 4.0).translate(timeOffset, 0),
           );
           ctx.fill();
+          ctx.globalAlpha = 1.0;
         }
 
         ctx.strokeStyle = `rgba(255,255,255,${0.2 - t * 0.16})`;
@@ -577,6 +587,13 @@ const Renderer = (() => {
           ctx.fillStyle = "#2563eb";
           ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
         }
+      } else if (obj.type === "petrol_pump") {
+        if (petrolPumpImg.complete && petrolPumpImg.width > 0) {
+          ctx.drawImage(petrolPumpImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#ef4444";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
       }
     }
   }
@@ -653,7 +670,7 @@ const Renderer = (() => {
     // Sprite scale might need adjustment depending on the PNG dimensions
     // For a typical sprite sheet we'll scale it slightly larger than hit-box.
     // Try adjusting 1.5 multiplier if your character looks too small or big.
-    const sc = 2.0;
+    const sc = 2.8;
     const drawW = p.w * sc;
     const drawH = p.h * sc;
 

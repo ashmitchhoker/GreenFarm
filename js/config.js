@@ -11,8 +11,8 @@ const CONFIG = {
   MINI_SCALE: 0.06,
 
   // Player
-  PLAYER_W: 40,
-  PLAYER_H: 40,
+  PLAYER_W: 55,
+  PLAYER_H: 55,
   PLAYER_SPEED: 260,
   PLAYER_COLOR: "#facc15",
 
@@ -192,6 +192,7 @@ const BARRIER_DEFS = [
   { type: "house1", x: 200, y: 80, w: 200, h: 220 },
   { type: "house2", x: 600, y: 100, w: 200, h: 200 },
   { type: "car", x: 500, y: 450, w: 120, h: 60 },
+  { type: "petrol_pump", x: 2000, y: 30, w: 400, h: 300 },
 ];
 
 /* ── Animal definitions ───────────────────────────────── */
