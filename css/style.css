@@ -306,8 +306,8 @@ canvas#game {
   #joystick-zone {
     width: 90px !important;
     height: 90px !important;
-    bottom: 20px !important;
-    left: 20px !important;
+    bottom: 40px !important;
+    left: 45px !important;
   }
   #joystick-base {
     width: 90px !important;
@@ -320,24 +320,24 @@ canvas#game {
 
   /* Slightly scale down interact button */
   #btn-interact {
-    width: 56px !important;
-    height: 56px !important;
-    bottom: 30px !important;
-    right: 25px !important;
-    font-size: 10px !important;
+    width: 64px !important;
+    height: 64px !important;
+    bottom: 40px !important;
+    right: 40px !important;
+    font-size: 26px !important;
   }
 
   /* Move shop icon right side of the screen on mobile above the interact btn */
   #shop-icon {
     bottom: auto !important;
-    top: 60px !important;
+    top: 70px !important;
     right: 15px !important;
     left: auto !important;
-    width: 48px !important;
-    height: 48px !important;
+    width: 58px !important;
+    height: 58px !important;
   }
   #shop-icon img {
-    width: 34px !important;
-    height: 34px !important;
+    width: 42px !important;
+    height: 42px !important;
   }
 }
