@@ -330,13 +330,11 @@ for (let i = 0; i < 12; i++) {
 const ANIMAL_DEFS = [
   // Sea animals (in the river: y = 1550 to 1800)
   { x: 300, y: 1600, type: "shark" },
-  { x: 800, y: 1700, type: "turtle" },
-  { x: 1200, y: 1650, type: "octopus" },
+  { x: 800, y: 1520, type: "turtle" }, // Edge of water/land (top grass)
   { x: 1800, y: 1720, type: "jellyfish" },
   { x: 2200, y: 1600, type: "shark" },
-  { x: 2600, y: 1680, type: "turtle" },
+  { x: 2600, y: 1790, type: "turtle" }, // Edge of water/land (bottom shore)
   { x: 400, y: 1750, type: "jellyfish" },
-  { x: 2800, y: 1650, type: "octopus" },
 
   // Land animals (below the river: y > 1800)
   { x: 600, y: 1950, type: "dog" },

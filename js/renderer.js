@@ -37,7 +37,6 @@ const Renderer = (() => {
     fox: [],
     frog: [],
     jellyfish: [],
-    octopus: [],
     shark: [],
     turtle: [],
   };
@@ -154,11 +153,6 @@ const Renderer = (() => {
     }
     for (let i = 1; i <= 4; i++) {
       const img = new Image();
-      img.src = `assets/animals/octopus/octopus ${i}.png`;
-      animalFrames.octopus.push(img);
-    }
-    for (let i = 1; i <= 4; i++) {
-      const img = new Image();
       img.src = `assets/animals/shark/shark ${i}.png`;
       animalFrames.shark.push(img);
     }
@@ -229,9 +223,9 @@ const Renderer = (() => {
     drawGround(t);
     drawPaths(t);
     drawTrees(t);
-    drawAnimals(t);
     drawBuildings();
     drawInteractables(t);
+    drawAnimals(t);
     drawBorders();
     drawParticles();
     drawPlayer(gameState);
@@ -431,6 +425,13 @@ const Renderer = (() => {
           if (a.type === "dog" || a.type === "fox") {
             w = 80;
             h = 80;
+          } else if (
+            a.type === "shark" ||
+            a.type === "turtle" ||
+            a.type === "jellyfish"
+          ) {
+            w = 60;
+            h = 60;
           }
 
           let isFlipped = a.dir === -1;
