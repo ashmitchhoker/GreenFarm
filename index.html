@@ -4,7 +4,12 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
     />
     <title>GreenFarm — Environment Awareness Game</title>
     <meta
@@ -124,15 +129,27 @@
           - Build Mud House: 0/1
         </div>
         <div
-          id="inventory"
+          id="task-puc"
           style="
             font-size: 14px;
             margin-top: 5px;
-            color: #facc15;
             font-weight: bold;
+            display: none;
           "
         >
-          🎒 Missing: Nothing
+          - Get PUC Done: 0/1
+        </div>
+        <div
+          id="task-all-done"
+          style="
+            font-size: 14px;
+            margin-top: 5px;
+            font-weight: bold;
+            display: none;
+            color: #4ade80;
+          "
+        >
+          🏆 All tasks completed
         </div>
       </div>
     </div>
@@ -275,15 +292,29 @@
         <div id="joystick-thumb"></div>
       </div>
       <div id="btn-interact">E</div>
-      <div id="btn-zoom-in">+</div>
-      <div id="btn-zoom-out">−</div>
     </div>
 
     <!-- Overlay -->
     <div id="overlay">
       <h1 id="overlay-title"></h1>
       <p id="overlay-msg"></p>
-      <button onclick="Game.restart()">Play Again</button>
+      <div
+        style="
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          justify-content: center;
+        "
+      >
+        <button
+          id="btn-keep-playing"
+          onclick="Game.continuePlaying()"
+          style="display: none; background: #60a5fa"
+        >
+          Keep Playing
+        </button>
+        <button onclick="Game.restart()">Play Again</button>
+      </div>
     </div>
 
     <!-- Scripts (order matters: config → utils → subsystems → renderer → game) -->

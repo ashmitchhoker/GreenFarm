@@ -18,6 +18,7 @@ const Renderer = (() => {
   let windmillBaseImg = new Image();
   let windmillFanImg = new Image();
   let roadImgs = { horiz: new Image(), vert: new Image() };
+  let gardenImgs = {};
 
   let house1Img = new Image();
   let house2Img = new Image();
@@ -116,6 +117,27 @@ const Renderer = (() => {
       treeImages.push(img);
     }
 
+    [
+      "Bush 1 - GREEN.png",
+      "Bush 2 - ORANGE.png",
+      "Flower 1 - BLUE.png",
+      "Flower 11 - RED.png",
+      "Flower 12 - YELLOW.png",
+      "Flower 2 - MAGENTA.png",
+      "Flower 5 - BLUE.png",
+      "Flower 7 - PINK 2.png",
+      "Flower 8 - RED.png",
+      "Flower Pot 1 - BLUE.png",
+      "Flower Pot 2 - RED.png",
+      "Flower Pot 2 - YELLOW.png",
+      "Flower Pot 3 - PURPLE.png",
+      "Flower Pot 4 - WHITE.png",
+    ].forEach((fn) => {
+      const img = new Image();
+      img.src = `assets/garden/${fn}`;
+      gardenImgs[fn] = img;
+    });
+
     // Load factory images
     const factoryFiles = [
       "factory 1.png",
@@ -183,7 +205,7 @@ const Renderer = (() => {
     house1Img.src = "assets/house/house 1.png";
     house2Img.src = "assets/house/house 2.png";
     benchImg.src = "assets/house/bench.png";
-    carImg.src = "assets/house/car.png";
+    carImg.src = "assets/car/car_facing_right.png";
     fenceImg.src = "assets/house/fence.png";
     petrolPumpImg.src = "assets/petrol_pump.png";
     carParkImg.src = "assets/car_park/car_park.png"; // Load car park
@@ -223,7 +245,7 @@ const Renderer = (() => {
     drawGround(t);
     drawPaths(t);
     drawTrees(t);
-    drawBuildings();
+    drawBuildings(gameState);
     drawInteractables(t);
     drawAnimals(t);
     drawBorders();
@@ -917,7 +939,7 @@ const Renderer = (() => {
   }
 
   /* ── Buildings (barn, shed) ─────────────────────────── */
-  function drawBuildings() {
+  function drawBuildings(gameState) {
     // Draw building obstacles dynamically based on type
     for (const obj of Objects.barriers) {
       if (obj.type === "house1") {
@@ -934,6 +956,24 @@ const Renderer = (() => {
           ctx.fillStyle = "#78716c";
           ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
         }
+      } else if (obj.type === "garden_grid") {
+        let img = new Image();
+        img.src =
+          "assets/garden/Garden Grid with Flowers/Grid " + obj.variant + ".png";
+        if (img.complete && img.width > 0)
+          ctx.drawImage(img, obj.x, obj.y, obj.w, obj.h);
+      } else if (obj.type === "garden_bush") {
+        let img = gardenImgs[obj.assetName];
+        if (img && img.complete && img.width > 0)
+          ctx.drawImage(img, obj.x, obj.y, obj.w, obj.h);
+      } else if (obj.type === "garden_pot") {
+        let img = gardenImgs[obj.assetName];
+        if (img && img.complete && img.width > 0)
+          ctx.drawImage(img, obj.x, obj.y, obj.w, obj.h);
+      } else if (obj.type === "garden_flower") {
+        let img = gardenImgs[obj.assetName];
+        if (img && img.complete && img.width > 0)
+          ctx.drawImage(img, obj.x, obj.y, obj.w, obj.h);
       } else if (obj.type === "bench") {
         if (benchImg.complete && benchImg.width > 0) {
           ctx.drawImage(benchImg, obj.x, obj.y, obj.w, obj.h);
@@ -947,6 +987,27 @@ const Renderer = (() => {
         } else {
           ctx.fillStyle = "#2563eb";
           ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+        if (
+          gameState &&
+          !gameState.gameWon &&
+          gameState.tasks.housesBuilt >= gameState.tasks.housesRequired &&
+          gameState.pucState === 0
+        ) {
+          const now = Date.now();
+          ctx.save();
+          ctx.strokeStyle = `rgba(74, 222, 128, ${0.5 + Math.sin(now / 200) * 0.5})`;
+          ctx.lineWidth = 4;
+          ctx.strokeRect(obj.x - 5, obj.y - 5, obj.w + 10, obj.h + 10);
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 20px 'Comic Sans MS', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(
+            "Click to Drive!",
+            obj.x + obj.w / 2,
+            obj.y - 15 + Math.sin(now / 150) * 5,
+          );
+          ctx.restore();
         }
       } else if (obj.type === "petrol_pump") {
         if (petrolPumpImg.complete && petrolPumpImg.width > 0) {

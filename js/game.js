@@ -17,6 +17,7 @@ const Game = (() => {
       bottles: 0,
       grains: 0,
     },
+    pucState: 0,
     tasks: {
       lightsRequired: 3,
       lightsTurnedOff: 0,
@@ -38,6 +39,8 @@ const Game = (() => {
       housesBuilt: 0,
       solarRequired: 1,
       solarInstalled: 0,
+      pucRequired: 1,
+      pucDone: 0,
     },
   };
 
@@ -65,18 +68,6 @@ const Game = (() => {
     Input.initPinchZoom(canvas);
     Input.initWheelZoom(canvas);
 
-    // Zoom buttons (mobile)
-    const zoomIn = document.getElementById("btn-zoom-in");
-    const zoomOut = document.getElementById("btn-zoom-out");
-    if (zoomIn)
-      zoomIn.addEventListener("click", () =>
-        Camera.adjustZoom(CONFIG.ZOOM_STEP),
-      );
-    if (zoomOut)
-      zoomOut.addEventListener("click", () =>
-        Camera.adjustZoom(-CONFIG.ZOOM_STEP),
-      );
-
     // Start
     updateTaskUI();
     requestAnimationFrame(loop);
@@ -94,21 +85,19 @@ const Game = (() => {
     const dt = Math.min((time - lastTime) / 1000, 0.05);
     lastTime = time;
 
-    if (!state.gameOver && !state.gameWon) {
+    if (!state.gameOver) {
       Input.pollKeyboard();
     }
 
     // Always call update so the player death animation and particles can progress
-    if (!state.gameWon) {
-      update(dt);
-    }
+    update(dt);
 
     Renderer.draw(state, VW, VH);
 
     // Draw placement preview if active item
     const activeItem =
       typeof Shop !== "undefined" ? Shop.getActiveItem() : null;
-    if (activeItem && !state.gameWon && !state.gameOver) {
+    if (activeItem && !state.gameOver) {
       if (Input.mousePos) {
         // Convert screen to world coord using camera offset and zoom
         let wx = Input.mousePos.x / Camera.zoom + Camera.x;
@@ -205,6 +194,32 @@ const Game = (() => {
 
           if (state.gameWon) {
             canPlace = true; // allow placing anything after win
+          }
+
+          if (canPlace && activeItem.type === "mud_house") {
+            // Find if there's a placeholder it snaps to
+            let targetRect = {
+              x: wx - renderW / 2,
+              y: wy - renderH / 2,
+              w: renderW,
+              h: renderH,
+            };
+            for (let b of Objects.barriers) {
+              if (b.type === "mud_house_placeholder" && !b.filled) {
+                const cx = b.x + b.w / 2;
+                const cy = b.y + b.h / 2;
+                if (Math.hypot(wx - cx, wy - cy) < 50) {
+                  // Placed exactly on placeholder, so placeholder will become solid
+                  targetRect = { x: b.x, y: b.y, w: b.w, h: b.h };
+                  break;
+                }
+              }
+            }
+
+            if (Utils.rectsOverlap(Player.state, targetRect)) {
+              canPlace = false;
+              warningMsg = "Can't build a house on yourself!";
+            }
           }
 
           if (!canPlace) {
@@ -346,6 +361,12 @@ const Game = (() => {
         key: "housesBuilt",
         req: "housesRequired",
       },
+      {
+        id: "task-puc",
+        label: "Get PUC Done",
+        key: "pucDone",
+        req: "pucRequired",
+      },
     ];
 
     let foundActive = false;
@@ -370,10 +391,17 @@ const Game = (() => {
       }
     }
 
+    const allDoneEl = document.getElementById("task-all-done");
+    if (allDoneEl) {
+      allDoneEl.style.display = !foundActive ? "block" : "none";
+    }
+
     checkWinCondition();
   }
 
   function checkWinCondition() {
+    if (state.gameWon) return; // Prevent triggering multiple times
+
     if (
       state.tasks.lightsTurnedOff >= state.tasks.lightsRequired &&
       state.tasks.trashCollected >= state.tasks.trashRequired &&
@@ -384,16 +412,21 @@ const Game = (() => {
       state.tasks.windmillsStarted >= state.tasks.windmillsRequired &&
       state.tasks.treesPlanted >= state.tasks.treesRequired &&
       state.tasks.solarInstalled >= state.tasks.solarRequired &&
-      state.tasks.housesBuilt >= state.tasks.housesRequired
+      state.tasks.housesBuilt >= state.tasks.housesRequired &&
+      state.tasks.pucDone >= state.tasks.pucRequired
     ) {
       state.gameWon = true;
       const overlay = document.getElementById("overlay");
       const overlayTitle = document.getElementById("overlay-title");
       const overlayMsg = document.getElementById("overlay-msg");
-      overlayTitle.textContent = "🌿 Tasks Completed!";
+      const keepPlayingBtn = document.getElementById("btn-keep-playing");
+
+      overlayTitle.textContent = "🏅 Environment Samaritan";
       overlayTitle.style.color = "#4ade80";
       overlayMsg.textContent =
-        "You cleaned the farm and built a green future! Score: " + state.score;
+        "All tasks completed! You cleaned the city and built a green future. Score: " +
+        state.score;
+      if (keepPlayingBtn) keepPlayingBtn.style.display = "block";
       overlay.classList.add("active");
     }
   }
@@ -419,18 +452,33 @@ const Game = (() => {
 
     // Update animal positions
     for (const a of Objects.animals) {
-      if (a.type === "dog" || a.type === "fox") {
+      if (["dog", "fox", "shark", "turtle", "jellyfish"].includes(a.type)) {
         if (a.speed === undefined) {
           if (a.type === "fox") {
             a.speed = 40 + Math.random() * 40; // fox faces right, move right
             a.dir = 1;
-          } else {
+          } else if (a.type === "dog") {
             a.speed = -(40 + Math.random() * 40); // dog faces left, move left
             a.dir = 1;
+          } else if (a.type === "shark") {
+            a.speed = 50 + Math.random() * 40; // shark face right
+            a.dir = 1;
+          } else if (a.type === "turtle") {
+            a.speed = -(15 + Math.random() * 15); // turtle slow left
+            a.dir = -1;
+          } else if (a.type === "jellyfish") {
+            a.speed = -(10 + Math.random() * 10); // jellyfish very slow left
+            a.dir = -1;
           }
         }
 
         a.x += a.speed * dt;
+
+        // Add vertical bobbing for jellyfish
+        if (a.type === "jellyfish") {
+          if (a.startY === undefined) a.startY = a.y;
+          a.y = a.startY + Math.sin(Date.now() / 300 + a.x) * 5;
+        }
 
         // wrap around the map horizontally
         if (a.x < -150) {
@@ -491,6 +539,9 @@ const Game = (() => {
       }
       if (state.tasks.housesBuilt < state.tasks.housesRequired) {
         return obj.type === "mud_house_placeholder";
+      }
+      if (state.tasks.pucDone < state.tasks.pucRequired) {
+        return obj.type === "petrol_pump" && state.pucState === 2;
       }
 
       return true; // default back to true if no task matched
@@ -684,6 +735,18 @@ const Game = (() => {
               );
               updateTaskUI();
             }
+          } else if (nearest.type === "petrol_pump") {
+            if (state.pucState === 2) {
+              state.pucState = 3;
+              state.tasks.pucDone++;
+              nearest.timer = 999999;
+              nearest.interactLabel = "";
+              pts = 100;
+              Particles.spawnFloat(cx, cy - 20, "PUC Done! +100", "#4ade80");
+              updateTaskUI();
+            } else {
+              pts = 0;
+            }
           } else {
             Particles.spawnFloat(cx, cy - 20, "+" + pts, "#4ade80");
           }
@@ -729,6 +792,58 @@ const Game = (() => {
             obj.x = obj.startX;
             obj.isMoving = false;
             obj.actionState = "";
+          }
+        }
+      }
+    }
+
+    // PUC Task Car Logic
+    if (
+      !state.gameWon &&
+      state.tasks.housesBuilt >= state.tasks.housesRequired &&
+      state.pucState < 3
+    ) {
+      const gCar = Objects.barriers.find((b) => b.type === "car");
+      if (gCar) {
+        if (state.pucState === 0) {
+          const activeItem =
+            typeof Shop !== "undefined" ? Shop.getActiveItem() : null;
+          if (Input.mouseClicked && !activeItem) {
+            let wx = Input.mousePos.x / Camera.zoom + Camera.x;
+            let wy = Input.mousePos.y / Camera.zoom + Camera.y;
+            if (
+              wx >= gCar.x &&
+              wx <= gCar.x + gCar.w &&
+              wy >= gCar.y &&
+              wy <= gCar.y + gCar.h
+            ) {
+              state.pucState = 1;
+              Input.consumeClick();
+              Particles.spawnFloat(
+                gCar.x + gCar.w / 2,
+                gCar.y,
+                "Driving to Gas Station...",
+                "#4ade80",
+              );
+            }
+          }
+        } else if (state.pucState === 1) {
+          let speed = 250;
+          if (gCar.x < 1580 && gCar.y > 500) {
+            gCar.x += speed * dt;
+          } else if (gCar.y > 220 && gCar.x >= 1580) {
+            gCar.y -= speed * dt;
+          } else if (gCar.x < 2000) {
+            gCar.x += speed * dt;
+            if (gCar.y > 50) gCar.y -= speed * dt * 0.5;
+          } else {
+            state.pucState = 2; // Arrived
+            Particles.spawnFloat(
+              gCar.x + gCar.w / 2,
+              gCar.y,
+              "Get PUC Done at Pump!",
+              "#4ade80",
+            );
           }
         }
       }
@@ -786,6 +901,13 @@ const Game = (() => {
     state.tasks.treesPlanted = 0;
     state.tasks.housesBuilt = 0;
     state.tasks.solarInstalled = 0;
+    state.pucState = 0;
+    state.tasks.pucDone = 0;
+    const gCar = Objects.barriers.find((b) => b.type === "car");
+    if (gCar) {
+      gCar.x = 400;
+      gCar.y = 560;
+    }
     updateTaskUI();
     Particles.reset();
     Objects.resetTimers();
@@ -793,5 +915,9 @@ const Game = (() => {
     document.getElementById("overlay").classList.remove("active");
   }
 
-  return { init, restart };
+  function continuePlaying() {
+    document.getElementById("overlay").classList.remove("active");
+  }
+
+  return { init, restart, continuePlaying };
 })();

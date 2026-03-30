@@ -38,9 +38,20 @@ CONFIG.IS_TOUCH = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 const INTERACTABLE_DEFS = [
   // POLLUTION SOURCES (Industrial Zone - Top Right, and down bottom)
   {
+    type: "petrol_pump",
+    x: 2000,
+    y: -70,
+    w: 350,
+    h: 260,
+    pollRate: 0,
+    interactEffect: 0,
+    cooldown: 1.0,
+    interactLabel: "Get PUC Test Done",
+  },
+  {
     type: "trashbag",
-    x: 500, // On bottom street (moved from top)
-    y: 1170, // Placed on the green grass just above the 4th road
+    x: 500, // Moved to middle street
+    y: 830, // Placed on the green grass just above the 3rd road
     w: 60,
     h: 50,
     pollRate: 0.14,
@@ -129,7 +140,7 @@ const BARRIER_DEFS = [
   { x: 0, y: CONFIG.WORLD_H - 14, w: CONFIG.WORLD_W, h: 14 },
   { x: 0, y: -200, w: 14, h: CONFIG.WORLD_H + 200 },
   { x: CONFIG.WORLD_W - 14, y: -200, w: 14, h: CONFIG.WORLD_H + 200 },
-  { type: "car", x: 2050, y: 20, w: 120, h: 60 }, // Parked at the petrol pump
+  { type: "car", x: 400, y: 560, w: 180, h: 90 }, // Parked on the street near the houses
   { type: "petrol_pump", x: 2000, y: -70, w: 350, h: 260 }, // Placed naturally above the road in the extended area
   { type: "mud_house_placeholder", x: 1330, y: 660, w: 240, h: 240 }, // Magnetic placeholder on the second street rightmost spot
   { type: "mud_house_placeholder", x: 1330, y: 1000, w: 240, h: 240 }, // Magnetic placeholder on the third street rightmost spot
@@ -226,6 +237,108 @@ for (let x = 1800; x <= 2800; x += 250) {
   fCount++;
 }
 
+// ── Aesthetic Custom Garden ──────────────────────────────────────────────
+const gardenPots = ["Flower Pot 1 - BLUE.png", "Flower Pot 4 - WHITE.png"];
+const gardenFlowers = [
+  "Flower 1 - BLUE.png",
+  "Flower 11 - RED.png",
+  "Flower 7 - PINK 2.png",
+];
+const gardenBushes = ["Bush 1 - GREEN.png", "Bush 2 - ORANGE.png"];
+
+const gStartX = 1850;
+const gEndX = 2750;
+const gStartY = 1040;
+const gEndY = 1170;
+
+// Border Pots (Scaled properly to 50x50 to avoid road overlap)
+for (let gx = gStartX; gx <= gEndX; gx += 85) {
+  // Top Border
+  BARRIER_DEFS.push({
+    type: "garden_pot",
+    assetName: gardenPots[Math.floor(Math.random() * gardenPots.length)],
+    x: gx,
+    y: gStartY,
+    w: 50,
+    h: 50,
+  });
+  // Bottom Border
+  BARRIER_DEFS.push({
+    type: "garden_pot",
+    assetName: gardenPots[Math.floor(Math.random() * gardenPots.length)],
+    x: gx,
+    y: gEndY,
+    w: 50,
+    h: 50,
+  });
+}
+for (let gy = gStartY + 60; gy < gEndY; gy += 60) {
+  // Left Border
+  BARRIER_DEFS.push({
+    type: "garden_pot",
+    assetName: gardenPots[Math.floor(Math.random() * gardenPots.length)],
+    x: gStartX,
+    y: gy,
+    w: 50,
+    h: 50,
+  });
+  // Right Border
+  BARRIER_DEFS.push({
+    type: "garden_pot",
+    assetName: gardenPots[Math.floor(Math.random() * gardenPots.length)],
+    x: gEndX,
+    y: gy,
+    w: 50,
+    h: 50,
+  });
+}
+
+// Middle layer of flowers
+for (let gx = gStartX + 80; gx <= gEndX - 80; gx += 60) {
+  BARRIER_DEFS.push({
+    type: "garden_flower",
+    assetName: gardenFlowers[Math.floor(Math.random() * gardenFlowers.length)],
+    x: gx,
+    y: 1105,
+    w: 40,
+    h: 40,
+  });
+}
+
+// Corner bushes (Scaled down gracefully)
+BARRIER_DEFS.push({
+  type: "garden_bush",
+  assetName: gardenBushes[0],
+  x: gStartX - 35,
+  y: gStartY - 35,
+  w: 90,
+  h: 90,
+});
+BARRIER_DEFS.push({
+  type: "garden_bush",
+  assetName: gardenBushes[1],
+  x: gEndX - 5,
+  y: gStartY - 35,
+  w: 90,
+  h: 90,
+});
+BARRIER_DEFS.push({
+  type: "garden_bush",
+  assetName: gardenBushes[1],
+  x: gStartX - 35,
+  y: gEndY - 15,
+  w: 90,
+  h: 90,
+});
+BARRIER_DEFS.push({
+  type: "garden_bush",
+  assetName: gardenBushes[0],
+  x: gEndX - 5,
+  y: gEndY - 15,
+  w: 90,
+  h: 90,
+});
+
 // Generate Benches along the Riverfront (River is at y=1550, so benches around y=1420)
 for (let x = 150; x <= 3000; x += 400) {
   // Avoid placing bench directly in the middle path if they are continuous, but doing 400 spacing is sparse.
@@ -276,34 +389,6 @@ INTERACTABLE_DEFS.push(
     cooldown: 2.0,
     interactLabel: "Empty general bin (−10)",
     icon: "🗑️",
-  },
-);
-
-// Add hazardous/contaminated bins in the factory corner
-INTERACTABLE_DEFS.push(
-  {
-    type: "trashcan_contaminated",
-    x: 3100,
-    y: 350,
-    w: 80,
-    h: 80,
-    pollRate: 0.1,
-    interactEffect: -15,
-    cooldown: 3.0,
-    interactLabel: "Empty contaminated waste (−15)",
-    icon: "☣️",
-  },
-  {
-    type: "trashcan_hazardous",
-    x: 3100,
-    y: 450,
-    w: 80,
-    h: 80,
-    pollRate: 0.1,
-    interactEffect: -15,
-    cooldown: 3.0,
-    interactLabel: "Empty hazardous waste (−15)",
-    icon: "☢️",
   },
 );
 

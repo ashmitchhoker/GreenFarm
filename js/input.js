@@ -82,8 +82,10 @@ const Input = (() => {
       dx *= 0.7071;
       dy *= 0.7071;
     }
-    dir.x = dx;
-    dir.y = dy;
+    if (!joystickActive) {
+      dir.x = dx;
+      dir.y = dy;
+    }
 
     if (keys["e"]) {
       interactPressed = true;
@@ -111,11 +113,26 @@ const Input = (() => {
       "touchstart",
       (e) => {
         e.preventDefault();
-        const t = e.touches[0];
+        const t = e.targetTouches[0];
         const rect = zone.getBoundingClientRect();
         joystickOrigin.x = rect.left + rect.width / 2;
         joystickOrigin.y = rect.top + rect.height / 2;
         joystickActive = true;
+
+        // immediately apply initial offset so tap-and-hold works
+        let dx = t.clientX - joystickOrigin.x;
+        let dy = t.clientY - joystickOrigin.y;
+        const J_RADIUS = zone.offsetWidth / 2 - thumb.offsetWidth / 2;
+        const dist = Math.hypot(dx, dy);
+        if (dist > J_RADIUS) {
+          dx = (dx / dist) * J_RADIUS;
+          dy = (dy / dist) * J_RADIUS;
+        }
+        const center = (zone.offsetWidth - thumb.offsetWidth) / 2;
+        thumb.style.left = center + dx + "px";
+        thumb.style.top = center + dy + "px";
+        dir.x = dx / J_RADIUS;
+        dir.y = dy / J_RADIUS;
       },
       { passive: false },
     );
@@ -124,21 +141,23 @@ const Input = (() => {
       "touchmove",
       (e) => {
         e.preventDefault();
-        if (!joystickActive) return;
-        const t = e.touches[0];
+        if (!joystickActive || e.targetTouches.length === 0) return;
+        const t = e.targetTouches[0];
         let dx = t.clientX - joystickOrigin.x;
         let dy = t.clientY - joystickOrigin.y;
+        const J_RADIUS = zone.offsetWidth / 2 - thumb.offsetWidth / 2;
         const dist = Math.hypot(dx, dy);
-        if (dist > JOYSTICK_RADIUS) {
-          dx = (dx / dist) * JOYSTICK_RADIUS;
-          dy = (dy / dist) * JOYSTICK_RADIUS;
+        if (dist > J_RADIUS) {
+          dx = (dx / dist) * J_RADIUS;
+          dy = (dy / dist) * J_RADIUS;
         }
         // Move thumb visual
-        thumb.style.left = 43 + dx + "px";
-        thumb.style.top = 43 + dy + "px";
+        const center = (zone.offsetWidth - thumb.offsetWidth) / 2;
+        thumb.style.left = center + dx + "px";
+        thumb.style.top = center + dy + "px";
         // Normalise to -1..1
-        dir.x = dx / JOYSTICK_RADIUS;
-        dir.y = dy / JOYSTICK_RADIUS;
+        dir.x = dx / J_RADIUS;
+        dir.y = dy / J_RADIUS;
       },
       { passive: false },
     );
@@ -147,8 +166,9 @@ const Input = (() => {
       joystickActive = false;
       dir.x = 0;
       dir.y = 0;
-      thumb.style.left = "43px";
-      thumb.style.top = "43px";
+      const center = (zone.offsetWidth - thumb.offsetWidth) / 2;
+      thumb.style.left = center + "px";
+      thumb.style.top = center + "px";
     };
     zone.addEventListener("touchend", endJoystick);
     zone.addEventListener("touchcancel", endJoystick);
