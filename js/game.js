@@ -98,8 +98,32 @@ const Game = (() => {
     if (activeItem && !state.gameWon && !state.gameOver) {
       if (Input.mousePos) {
         // Convert screen to world coord using camera offset and zoom
-        const wx = Input.mousePos.x / Camera.zoom + Camera.x;
-        const wy = Input.mousePos.y / Camera.zoom + Camera.y;
+        let wx = Input.mousePos.x / Camera.zoom + Camera.x;
+        let wy = Input.mousePos.y / Camera.zoom + Camera.y;
+        let renderW = activeItem.w;
+        let renderH = activeItem.h;
+
+        // Snapping logic for solar panel on house roofs
+        if (activeItem.type === "solar_panel") {
+          for (let b of Objects.barriers) {
+            if (b.type === "house1" || b.type === "house2") {
+              const roofX = b.x + b.w / 2;
+              const roofY = b.y + b.h * 0.1; // Placed higher up on the roof, avoiding windows
+              const dx = wx - roofX;
+              const dy = wy - (b.y + b.h / 2); // Distance to center of house
+
+              if (Math.hypot(dx, dy) < 140) {
+                // Snap radius
+                wx = roofX;
+                wy = roofY;
+                // Scale to fit visually on the roof
+                renderW = Math.min(activeItem.w, b.w * 0.5);
+                renderH = renderW * (activeItem.h / activeItem.w);
+                break;
+              }
+            }
+          }
+        }
 
         ctx.save();
         ctx.globalAlpha = 0.5;
@@ -110,23 +134,17 @@ const Game = (() => {
         img.src = activeItem.icon;
 
         ctx.translate(wx, wy);
-        ctx.drawImage(
-          img,
-          -activeItem.w / 2,
-          -activeItem.h / 2,
-          activeItem.w,
-          activeItem.h,
-        );
+        ctx.drawImage(img, -renderW / 2, -renderH / 2, renderW, renderH);
         ctx.restore();
 
         if (Input.mouseClicked) {
           // Place item
           const placedItem = {
             id: "placed_" + Date.now(),
-            x: wx - activeItem.w / 2,
-            y: wy - activeItem.h / 2,
-            w: activeItem.w,
-            h: activeItem.h,
+            x: wx - renderW / 2,
+            y: wy - renderH / 2,
+            w: renderW,
+            h: renderH,
             type: activeItem.type,
             sprite: activeItem.icon,
             assetPath: activeItem.icon,
@@ -253,6 +271,7 @@ const Game = (() => {
       nearestDist = Infinity;
     for (const obj of Objects.interactables) {
       if (!obj.active && obj.type === "trashbag") continue; // skip picked up trash
+      if (!obj.interactLabel) continue; // skip decorative placed items
 
       const d = Utils.centreDist(Player.state, obj);
       const ir = Objects.getInteractRadius(obj);
@@ -265,20 +284,9 @@ const Game = (() => {
     if (nearest && nearest.timer <= 0) {
       hintEl.classList.add("visible");
 
-      let actionLabel = nearest.interactLabel;
-      if (nearest.type === "trashcan") {
-        if (state.inventory.trash > 0) {
-          actionLabel = `Throw trash in bin (${state.inventory.trash} carrying)`;
-        } else {
-          actionLabel = `Bin is empty (Find trash on the ground!)`;
-        }
-      } else if (nearest.type === "trashbag") {
-        actionLabel = "Pick up trash";
-      }
-
       hintEl.innerHTML = CONFIG.IS_TOUCH
-        ? `Tap <strong>E</strong> — ${actionLabel}`
-        : `Press <strong>E</strong> — ${actionLabel}`;
+        ? `Tap <strong>E</strong>`
+        : `Press <strong>E</strong>`;
     } else {
       hintEl.classList.remove("visible");
     }

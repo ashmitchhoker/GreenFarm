@@ -35,8 +35,8 @@ const Objects = (() => {
 
     // Tree generation zones for a structured town
     const zones = [
-      { x: 100, y: 800, w: 1200, h: 500, density: 25 }, // Forest buffer below the farm
-      { x: 1300, y: 150, w: 500, h: 500, density: 15 }, // Park area
+      { x: 1800, y: 1000, w: 1200, h: 400, density: 25 }, // Forest buffer right side
+      { x: 2200, y: 150, w: 900, h: 500, density: 15 }, // Park area on right
       { x: 2000, y: 800, w: 1000, h: 500, density: 30 }, // Another dense forest buffer above the river
       { x: 100, y: 1800, w: 2000, h: 500, density: 35 }, // South forest across the river
     ];

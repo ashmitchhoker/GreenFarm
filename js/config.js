@@ -40,7 +40,7 @@ const INTERACTABLE_DEFS = [
   {
     type: "factory",
     x: 2700,
-    y: 200,
+    y: 300,
     w: 160,
     h: 120,
     pollRate: 0.35,
@@ -75,7 +75,7 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "trashbag",
-    x: 1400,
+    x: 2000,
     y: 1100,
     w: 60,
     h: 50,
@@ -87,7 +87,7 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "trashbag",
-    x: 450,
+    x: 1800,
     y: 1800,
     w: 60,
     h: 50,
@@ -99,7 +99,7 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "trashcan",
-    x: 450,
+    x: 1800,
     y: 1400,
     w: 60,
     h: 60,
@@ -162,7 +162,7 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "windmill",
-    x: 800,
+    x: 1800,
     y: 600,
     w: 100,
     h: 100,
@@ -171,8 +171,8 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "windmill",
-    x: 200,
-    y: 200,
+    x: 2200,
+    y: 300,
     w: 100,
     h: 100,
     isOn: false,
@@ -188,24 +188,28 @@ const BARRIER_DEFS = [
   { x: 0, y: CONFIG.WORLD_H - 14, w: CONFIG.WORLD_W, h: 14 },
   { x: 0, y: 0, w: 14, h: CONFIG.WORLD_H },
   { x: CONFIG.WORLD_W - 14, y: 0, w: 14, h: CONFIG.WORLD_H },
-  // Farm buildings clustered together
-  { type: "house1", x: 200, y: 80, w: 200, h: 220 },
-  { type: "house2", x: 600, y: 100, w: 200, h: 200 },
-  { type: "car", x: 500, y: 450, w: 120, h: 60 },
+  { type: "car", x: 2300, y: 220, w: 120, h: 60 },
   { type: "petrol_pump", x: 2000, y: 30, w: 400, h: 300 },
 ];
 
+// Dynamically generate colony houses on the left
+for (let y of [340, 680, 1020]) {
+  for (let x = 100; x <= 1350; x += 250) {
+    BARRIER_DEFS.push({ type: (Math.random() > 0.5 ? "house1" : "house2"), x: x, y: y, w: 200, h: 200 });
+  }
+}
+
 /* ── Animal definitions ───────────────────────────────── */
 const ANIMAL_DEFS = [
-  // Farm animals clustered around the farm (Top Left)
-  { x: 400, y: 550, type: "cow" },
-  { x: 500, y: 600, type: "chicken" },
-  { x: 300, y: 400, type: "cow" },
-  { x: 200, y: 450, type: "chicken" },
-  { x: 700, y: 600, type: "cow" },
-  { x: 800, y: 750, type: "chicken" },
-  // Wild / roaming animals
-  { x: 1500, y: 500, type: "cow" },
+  // Moved farm animals to the right side
+  { x: 2400, y: 550, type: "cow" },
+  { x: 2500, y: 600, type: "chicken" },
+  { x: 2300, y: 400, type: "cow" },
+  { x: 2200, y: 450, type: "chicken" },
+  { x: 2700, y: 600, type: "cow" },
+  { x: 2800, y: 750, type: "chicken" },
+  // Wild / roaming animals (moved right)
+  { x: 2500, y: 900, type: "cow" },
   { x: 1800, y: 800, type: "chicken" },
   // Animals across the river
   { x: 600, y: 1800, type: "cow" },

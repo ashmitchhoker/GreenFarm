@@ -99,8 +99,8 @@ const Renderer = (() => {
     drawPaths(t);
     drawTrees(t);
     drawAnimals(t);
-    drawInteractables(t);
     drawBuildings();
+    drawInteractables(t);
     drawBorders();
     drawParticles();
     drawPlayer(gameState);
@@ -187,15 +187,25 @@ const Renderer = (() => {
     // Road width is widened to 140 for a better look
     const ROAD_W = 140;
 
-    // Main horizontal road connecting farm to factory (Centers on y=350 -> 350-70=280)
-    drawTiled(roadImgs.horiz, true, 800, 280, 1600, ROAD_W);
+    // Main vertical road dividing left colony and right side
+    drawTiled(roadImgs.vert, false, 1560, 200, ROAD_W, 1250);
 
-    // Path from farm buildings down (Centers on x=430 -> 430-70=360)
-    // Connects directly under the horizontal road y=280+140=420
-    drawTiled(roadImgs.vert, false, 360, 420, ROAD_W, 350);
+    // Right-side horizontal road from vertical road to factory
+    drawTiled(
+      roadImgs.horiz,
+      true,
+      1560 + ROAD_W,
+      200,
+      3200 - (1560 + ROAD_W),
+      ROAD_W,
+    );
 
-    // Main path down to the bridge/river crossing (Centers on x=1630 -> 1630-70=1560)
-    drawTiled(roadImgs.vert, false, 1560, 420, ROAD_W, 1030);
+    // Colony Horizontal Roads (Left side only)
+    drawTiled(roadImgs.horiz, true, 0, 200, 1560, ROAD_W); // Top
+    drawTiled(roadImgs.horiz, true, 0, 540, 1560, ROAD_W);
+    drawTiled(roadImgs.horiz, true, 0, 880, 1560, ROAD_W);
+    drawTiled(roadImgs.horiz, true, 0, 1220, 1560, ROAD_W); // Bottom before river
+
     // Bridge details
     ctx.fillStyle = "#451a03";
     for (let w = 1450; w < 1630; w += 20) {
@@ -521,16 +531,6 @@ const Renderer = (() => {
         }
         break;
     }
-
-    // Label
-    ctx.fillStyle = "#fff";
-    ctx.font = "13px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      obj.icon + " " + obj.type.replace(/_/g, " "),
-      cx,
-      obj.y + obj.h + 18,
-    );
 
     // Proximity glow
     const d = Utils.centreDist(Player.state, obj);
