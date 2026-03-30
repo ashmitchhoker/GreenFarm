@@ -14,11 +14,14 @@ const Game = (() => {
     totalCleaned: 0,
     inventory: {
       trash: 0,
+      bottles: 0,
       grains: 0,
     },
     tasks: {
       trashRequired: 3,
       trashCollected: 0,
+      bottlesRequired: 12,
+      bottlesCollected: 0,
       treesRequired: 3,
       treesPlanted: 0,
       housesRequired: 1,
@@ -221,6 +224,7 @@ const Game = (() => {
   function updateTaskUI() {
     // Hide all tasks first
     document.getElementById("task-trash").style.display = "none";
+    document.getElementById("task-bottle").style.display = "none";
     document.getElementById("task-plant").style.display = "none";
     document.getElementById("task-house").style.display = "none";
     document.getElementById("task-solar").style.display = "none";
@@ -230,6 +234,10 @@ const Game = (() => {
       const el = document.getElementById("task-trash");
       el.style.display = "block";
       el.textContent = `- Throw Trash in Bin: ${state.tasks.trashCollected}/${state.tasks.trashRequired}`;
+    } else if (state.tasks.bottlesCollected < state.tasks.bottlesRequired) {
+      const el = document.getElementById("task-bottle");
+      el.style.display = "block";
+      el.textContent = `- Collect Bottles: ${state.tasks.bottlesCollected}/${state.tasks.bottlesRequired}`;
     } else if (state.tasks.treesPlanted < state.tasks.treesRequired) {
       const el = document.getElementById("task-plant");
       el.style.display = "block";
@@ -250,6 +258,7 @@ const Game = (() => {
   function checkWinCondition() {
     if (
       state.tasks.trashCollected >= state.tasks.trashRequired &&
+      state.tasks.bottlesCollected >= state.tasks.bottlesRequired &&
       state.tasks.treesPlanted >= state.tasks.treesRequired &&
       state.tasks.housesBuilt >= state.tasks.housesRequired &&
       state.tasks.solarInstalled >= state.tasks.solarRequired
@@ -298,6 +307,33 @@ const Game = (() => {
 
     // Nearest interactable
     const hintEl = document.getElementById("interaction-hint");
+
+    // Check if player is on a specific task or completed all tasks
+    const isAllowedInteraction = (obj) => {
+      if (state.gameWon) return true; // all tasks completed
+
+      if (state.tasks.trashCollected < state.tasks.trashRequired) {
+        return obj.type === "trashbag" || obj.type === "trashcan_street";
+      }
+      if (state.tasks.bottlesCollected < state.tasks.bottlesRequired) {
+        return (
+          obj.type.startsWith("plastic_bottle") ||
+          obj.type === "trashcan_plastic"
+        );
+      }
+      if (state.tasks.treesPlanted < state.tasks.treesRequired) {
+        return obj.type === "tree_placeholder";
+      }
+      if (state.tasks.housesBuilt < state.tasks.housesRequired) {
+        return obj.type === "mud_house_placeholder";
+      }
+      if (state.tasks.solarInstalled < state.tasks.solarRequired) {
+        return obj.type === "solar_panel_placeholder";
+      }
+
+      return true; // default back to true if no task matched
+    };
+
     let nearest = null,
       nearestDist = Infinity;
     for (const obj of Objects.interactables) {
@@ -307,6 +343,7 @@ const Game = (() => {
       )
         continue; // skip picked up trash
       if (!obj.interactLabel) continue; // skip decorative placed items
+      if (!isAllowedInteraction(obj)) continue; // skip if not part of active task
 
       const d = Utils.centreDist(Player.state, obj);
       const ir = Objects.getInteractRadius(obj);
@@ -319,17 +356,34 @@ const Game = (() => {
     if (nearest && nearest.timer <= 0) {
       hintEl.classList.add("visible");
 
+      let actionText = "";
+      if (nearest.type === "trashbag") {
+        actionText = " to collect garbage";
+      } else if (nearest.type.startsWith("plastic_bottle")) {
+        actionText = " to collect bottles";
+      } else if (nearest.type === "trashcan_street") {
+        actionText = " to throw garbage";
+      } else if (nearest.type === "trashcan_plastic") {
+        actionText = " to throw bottles";
+      }
+
       hintEl.innerHTML = CONFIG.IS_TOUCH
-        ? `Tap <strong>E</strong>`
-        : `Press <strong>E</strong>`;
+        ? `Tap <strong>E</strong>${actionText}`
+        : `Press <strong>E</strong>${actionText}`;
     } else {
       hintEl.classList.remove("visible");
     }
 
     // Interaction
     if (Input.interact && nearest && nearest.timer <= 0) {
-      if (nearest.type.startsWith("trashcan") && state.inventory.trash === 0) {
-        // Can't interact with bin if no trash
+      if (
+        (nearest.type === "trashcan_street" && state.inventory.trash === 0) ||
+        (nearest.type === "trashcan_plastic" &&
+          state.inventory.bottles === 0) ||
+        (nearest.type.startsWith("trashcan") &&
+          !["trashcan_street", "trashcan_plastic"].includes(nearest.type))
+      ) {
+        // Can't interact with bin if no trash/bottles or it's not the right bin
         Input.consumeInteract();
       } else {
         const cx = nearest.x + nearest.w / 2;
@@ -338,21 +392,16 @@ const Game = (() => {
           ? Math.abs(nearest.interactEffect) * 10
           : 0;
 
-        if (
-          nearest.type === "trashbag" ||
-          nearest.type.startsWith("plastic_bottle")
-        ) {
+        if (nearest.type === "trashbag") {
           state.inventory.trash++;
           nearest.active = false; // "Remove" the trash
-          pts = 10; // Give some points just for picking up
-          Particles.spawnFloat(
-            cx,
-            cy - 20,
-            nearest.type.startsWith("plastic_bottle")
-              ? "Bottle picked up!"
-              : "Trash picked up!",
-            "#4ade80",
-          );
+          pts = 10;
+          Particles.spawnFloat(cx, cy - 20, "Trash picked up!", "#4ade80");
+        } else if (nearest.type.startsWith("plastic_bottle")) {
+          state.inventory.bottles++;
+          nearest.active = false; // "Remove" the bottle
+          pts = 10;
+          Particles.spawnFloat(cx, cy - 20, "Bottle picked up!", "#4ade80");
         } else if (nearest.type === "garbage_truck") {
           const streetBin = Objects.interactables.find(
             (o) => o.type === "trashcan_street",
@@ -382,38 +431,56 @@ const Game = (() => {
           } else {
             pts = 0;
           }
-        } else if (nearest.type.startsWith("trashcan")) {
+        } else if (nearest.type === "trashcan_street") {
           const thrown = state.inventory.trash;
-          if (nearest.type === "trashcan_street") {
-            nearest.trashCount = (nearest.trashCount || 0) + thrown;
-          }
+          nearest.trashCount = (nearest.trashCount || 0) + thrown;
           state.tasks.trashCollected += thrown;
           state.inventory.trash = 0;
           pts = thrown * 20; // 20 points per trash thrown in bin
           Particles.spawnFloat(cx, cy - 20, "+" + pts + " Points!", "#4ade80");
           updateTaskUI();
-        } else if (nearest.type === "windmill_controller") {
+        } else if (nearest.type === "trashcan_plastic") {
+          const thrown = state.inventory.bottles;
+          nearest.trashCount = (nearest.trashCount || 0) + thrown; // Generic visual bin count if used
+          state.tasks.bottlesCollected += thrown;
+          state.inventory.bottles = 0;
+          pts = thrown * 20;
+          Particles.spawnFloat(cx, cy - 20, "+" + pts + " Points!", "#4ade80");
+          updateTaskUI();
+        } else if (nearest.type === "windmill") {
           if (!nearest.isOn) {
             nearest.isOn = true;
             nearest.timer = nearest.cooldown || 999999;
             nearest.interactLabel = ""; // Disable further interactions
-            pts = 50;
-
-            // Turn on all windmills
-            Objects.interactables.forEach((obj) => {
-              if (obj.type === "windmill") {
-                obj.isOn = true;
-                obj.timer = 999999;
-                obj.interactLabel = "";
-              }
-            });
+            pts = 15;
 
             Particles.spawnFloat(
               cx,
               cy - 20,
-              "Windmills Active! +50",
+              "Windmill Active! +15",
               "#4ade80",
             );
+          }
+        } else if (nearest.type === "factory") {
+          if (nearest.active) {
+            nearest.active = false;
+            nearest.timer = 999999;
+            nearest.interactLabel = ""; // Disabled further interactions
+            pts = 50;
+            Particles.spawnFloat(
+              cx,
+              cy - 20,
+              "Factory Serviced! +50",
+              "#4ade80",
+            );
+          }
+        } else if (nearest.type === "oil_spill") {
+          if (nearest.active) {
+            nearest.active = false;
+            nearest.timer = 999999;
+            nearest.interactLabel = "";
+            pts = 30;
+            Particles.spawnFloat(cx, cy - 20, "Spill Cleaned! +30", "#4ade80");
           }
         } else {
           Particles.spawnFloat(cx, cy - 20, "+" + pts, "#4ade80");

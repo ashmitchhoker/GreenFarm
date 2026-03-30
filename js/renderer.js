@@ -460,20 +460,6 @@ const Renderer = (() => {
         }
         break;
 
-      case "windmill_controller":
-        // Placeholder for controller that will be added later
-        ctx.fillStyle = obj.isOn ? "#22c55e" : "#3b82f6"; // Green if on, Blue if off
-        ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
-        ctx.fillStyle = obj.isOn ? "#16a34a" : "#1d4ed8";
-        ctx.fillRect(obj.x + 10, obj.y + 10, obj.w - 20, obj.h - 20);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 20px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText("WINDMILL", cx, cy - 5);
-        ctx.fillText(obj.isOn ? "ACTIVE" : "CONTROL", cx, cy + 15);
-        break;
-
       case "trashcan_street":
         if (trashCanStreetImg && trashCanStreetImg.complete) {
           ctx.drawImage(trashCanStreetImg, obj.x, obj.y, obj.w, obj.h);
@@ -684,6 +670,7 @@ const Renderer = (() => {
         break;
 
       case "oil_spill":
+        if (!obj.active) break; // Don't draw if cleaned up
         ctx.fillStyle = `rgba(28,25,23,${0.7 + Math.sin(now / 800) * 0.1})`;
         ctx.beginPath();
         ctx.ellipse(cx, cy, obj.w / 2 + 10, obj.h / 2 + 5, 0, 0, Math.PI * 2);
@@ -983,22 +970,36 @@ const Renderer = (() => {
     const sc = document.getElementById("score-display");
     const ac = document.getElementById("actions-display");
     const taskTrash = document.getElementById("task-trash");
+    const taskBottle = document.getElementById("task-bottle");
     const inventory = document.getElementById("inventory");
 
     if (sc) sc.textContent = "⭐ Score: " + gs.score;
     if (ac) ac.textContent = "✅ Cleaned: " + gs.totalCleaned;
 
     if (taskTrash && gs.tasks) {
-      taskTrash.textContent = `- Throw in Bin: ${gs.tasks.trashCollected}/${gs.tasks.trashRequired}`;
+      taskTrash.textContent = `- Throw Trash in Bin: ${gs.tasks.trashCollected}/${gs.tasks.trashRequired}`;
       if (gs.tasks.trashCollected >= gs.tasks.trashRequired) {
         taskTrash.style.color = "#4ade80"; // Checkmark color
-        taskTrash.textContent = `✅ Throw in Bin: Done!`;
+        taskTrash.textContent = `✅ Throw Trash in Bin: Done!`;
+      }
+    }
+
+    if (taskBottle && gs.tasks) {
+      taskBottle.textContent = `- Collect Bottles: ${gs.tasks.bottlesCollected}/${gs.tasks.bottlesRequired}`;
+      if (gs.tasks.bottlesCollected >= gs.tasks.bottlesRequired) {
+        taskBottle.style.color = "#4ade80"; // Checkmark color
+        taskBottle.textContent = `✅ Collect Bottles: Done!`;
       }
     }
 
     if (inventory && gs.inventory) {
-      if (gs.inventory.trash > 0) {
-        inventory.textContent = `🎒 Carrying: ${gs.inventory.trash} Trash`;
+      let invText = [];
+      if (gs.inventory.trash > 0) invText.push(`${gs.inventory.trash} Trash`);
+      if (gs.inventory.bottles > 0)
+        invText.push(`${gs.inventory.bottles} Bottles`);
+
+      if (invText.length > 0) {
+        inventory.textContent = `🎒 Carrying: ` + invText.join(", ");
       } else {
         inventory.textContent = `🎒 Carrying: Nothing`;
       }

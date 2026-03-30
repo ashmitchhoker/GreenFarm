@@ -88,6 +88,8 @@ const Player = (() => {
     let bX = false,
       bY = false;
     for (const b of barriers) {
+      if (b.type === "mud_house_placeholder" && !b.filled) continue; // Skip collision if placeholder is not filled
+
       if (Utils.rectsOverlap(testX, b)) bX = true;
       if (Utils.rectsOverlap(testY, b)) bY = true;
     }

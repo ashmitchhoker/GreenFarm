@@ -119,10 +119,6 @@ const INTERACTABLE_DEFS = [
     w: 3200,
     h: 250, // Extended downwards
     pollRate: -0.08,
-    interactEffect: -12,
-    cooldown: 2.0,
-    interactLabel: "Clean the river (−12)",
-    icon: "🌊",
   },
 ];
 
@@ -207,21 +203,12 @@ for (let x = 1800; x <= 2800; x += 250) {
     w: 150, // Scaled up
     h: 150, // Scaled up
     isOn: false,
+    interactLabel: "Turn on Windmill (+15)",
+    interactEffect: -2,
+    cooldown: 5.0,
   });
   fCount++;
 }
-
-// Windmill Controller (placed to the right of windmills)
-INTERACTABLE_DEFS.push({
-  type: "windmill_controller",
-  x: 2950, // Right of the last windmill (2800)
-  y: 690, // Same y-level as windmills
-  w: 100,
-  h: 100,
-  isOn: false,
-  interactLabel: "Turn on all windmills (+50)",
-  icon: "🎛️",
-});
 
 // Generate Benches along the Riverfront (River is at y=1550, so benches around y=1420)
 for (let x = 150; x <= 3000; x += 400) {
