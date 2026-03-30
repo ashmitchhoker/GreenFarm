@@ -60,8 +60,56 @@ const Game = (() => {
     window.addEventListener("resize", resize);
 
     Objects.generateTrees();
+
+    // -- Preloader Hijack --
+    let loadedCount = 0;
+    let trackImages = [];
+    const OriginalImage = window.Image;
+    window.Image = function () {
+      const img = new OriginalImage();
+      trackImages.push(img);
+      return img;
+    };
+
     Renderer.init(ctx, miniCtx, miniCanvas.width, miniCanvas.height);
     if (typeof Shop !== "undefined") Shop.init();
+
+    window.Image = OriginalImage; // restore
+
+    const totalAssets = trackImages.length;
+    const updateProgress = () => {
+      loadedCount++;
+      const pct = Math.floor((loadedCount / totalAssets) * 100);
+      const fill = document.getElementById("preloader-fill");
+      const txt = document.getElementById("preloader-text");
+      if (fill) fill.style.width = pct + "%";
+      if (txt) txt.innerText = loadedCount + " / " + totalAssets + " assets";
+
+      if (loadedCount >= totalAssets) {
+        startEngine(); // Start game!
+      }
+    };
+
+    if (totalAssets === 0) {
+      startEngine();
+    } else {
+      trackImages.forEach((img) => {
+        if (img.complete) {
+          updateProgress();
+        } else {
+          img.addEventListener("load", updateProgress);
+          img.addEventListener("error", updateProgress); // count errors so it doesn't hang
+        }
+      });
+    }
+  }
+
+  function startEngine() {
+    const el = document.getElementById("preloader");
+    if (el) {
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 550);
+    }
 
     // Input setup
     if (CONFIG.IS_TOUCH) Input.initTouch();
