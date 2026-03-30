@@ -16,6 +16,9 @@ const Objects = (() => {
   const trees = [];
 
   function getInteractRadius(obj) {
+    if (obj.type === "oil_spill") {
+      return Math.max(obj.w, obj.h) + 10; // Very small distance requirement
+    }
     return Math.max(obj.w, obj.h) + 50;
   }
 

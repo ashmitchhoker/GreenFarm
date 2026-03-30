@@ -29,6 +29,18 @@ const Renderer = (() => {
   let bottle2Img = new Image();
   let carParkImg = new Image();
   let garbageTruckImg = new Image();
+  let streetLightOnImg = new Image();
+  let streetLightOffImg = new Image();
+
+  let animalFrames = {
+    dog: [],
+    fox: [],
+    frog: [],
+    jellyfish: [],
+    octopus: [],
+    shark: [],
+    turtle: [],
+  };
 
   const pickUpFrames = [];
   for (let i = 0; i <= 12; i++) {
@@ -119,6 +131,43 @@ const Renderer = (() => {
       factoryImages.push(img);
     });
 
+    // Load animal frames
+    for (let i = 1; i <= 8; i++) {
+      const img = new Image();
+      img.src = `assets/animals/dog/dog ${i}.png`;
+      animalFrames.dog.push(img);
+    }
+    for (let i = 1; i <= 14; i++) {
+      const img = new Image();
+      img.src = `assets/animals/fox/walk ${i}.png`;
+      animalFrames.fox.push(img);
+    }
+    for (let i = 1; i <= 20; i++) {
+      const img = new Image();
+      img.src = `assets/animals/frog/frog ${i}.png`;
+      animalFrames.frog.push(img);
+    }
+    for (let i = 1; i <= 6; i++) {
+      const img = new Image();
+      img.src = `assets/animals/jellyfish/jellyfish ${i}.png`;
+      animalFrames.jellyfish.push(img);
+    }
+    for (let i = 1; i <= 4; i++) {
+      const img = new Image();
+      img.src = `assets/animals/octopus/octopus ${i}.png`;
+      animalFrames.octopus.push(img);
+    }
+    for (let i = 1; i <= 4; i++) {
+      const img = new Image();
+      img.src = `assets/animals/shark/shark ${i}.png`;
+      animalFrames.shark.push(img);
+    }
+    for (let i = 1; i <= 6; i++) {
+      const img = new Image();
+      img.src = `assets/animals/turtle/turtle ${i}.png`;
+      animalFrames.turtle.push(img);
+    }
+
     garbageBagImg.src = "assets/garbage/garbage bag.png";
     trashCanStreetImg.src = "assets/garbage/trash_can_street.png";
     trashCanPaperImg.src = "assets/garbage/paper_trash.png";
@@ -128,6 +177,8 @@ const Renderer = (() => {
     trashCanHazardousImg.src = "assets/garbage/hazardous_trash.png";
     bottle1Img.src = "assets/plastic_bottles/bottle 1.png";
     bottle2Img.src = "assets/plastic_bottles/bottle 2.png";
+    streetLightOnImg.src = "assets/street_light/streetlight_on.png";
+    streetLightOffImg.src = "assets/street_light/streetlight_off.png";
     windmillBaseImg.src = "assets/windmill/windmill_nofan.png";
     windmillFanImg.src = "assets/windmill/fan.png";
 
@@ -363,10 +414,39 @@ const Renderer = (() => {
   /* ── Animals ────────────────────────────────────────── */
   function drawAnimals(t) {
     const vis = Math.floor(Objects.animals.length * (1 - t * 1.1));
+    const now = performance.now();
     for (let i = 0; i < Math.max(0, vis); i++) {
       const a = Objects.animals[i];
       ctx.globalAlpha = Math.max(0, 1 - t * 1.3);
-      if (a.type === "cow") {
+
+      const frames = animalFrames[a.type];
+      if (frames && frames.length > 0) {
+        // use an offset per animal to stagger animation based on their index
+        const frameIndex = Math.floor(now / 150 + i * 5) % frames.length;
+        const img = frames[frameIndex];
+        // Give them a fixed size for now or aspect ratio preserved
+        if (img && img.complete) {
+          let w = 40,
+            h = 40;
+          if (a.type === "dog" || a.type === "fox") {
+            w = 80;
+            h = 80;
+          }
+
+          let isFlipped = a.dir === -1;
+
+          if (isFlipped) {
+            ctx.save();
+            // Translate to center of image, scale, then draw offset
+            ctx.translate(a.x + w / 2, a.y + h / 2);
+            ctx.scale(-1, 1);
+            ctx.drawImage(img, -w / 2, -h / 2, w, h);
+            ctx.restore();
+          } else {
+            ctx.drawImage(img, a.x, a.y, w, h);
+          }
+        }
+      } else if (a.type === "cow") {
         ctx.fillStyle = "#f5f5f4";
         ctx.fillRect(a.x, a.y, 34, 22);
         ctx.fillStyle = "#1c1917";
@@ -457,6 +537,16 @@ const Renderer = (() => {
             ctx.fillRect(obj.x + 14 + i * 38, obj.y + 30, 20, 14);
           ctx.fillStyle = "#292524";
           ctx.fillRect(obj.x + obj.w / 2 - 14, obj.y + obj.h - 46, 28, 46);
+        }
+        break;
+
+      case "street_light":
+        const slImg = obj.isOn ? streetLightOnImg : streetLightOffImg;
+        if (slImg && slImg.complete) {
+          ctx.drawImage(slImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = obj.isOn ? "#facc15" : "#333";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
         }
         break;
 
@@ -969,28 +1059,10 @@ const Renderer = (() => {
   function updateHUD(gs) {
     const sc = document.getElementById("score-display");
     const ac = document.getElementById("actions-display");
-    const taskTrash = document.getElementById("task-trash");
-    const taskBottle = document.getElementById("task-bottle");
     const inventory = document.getElementById("inventory");
 
     if (sc) sc.textContent = "⭐ Score: " + gs.score;
     if (ac) ac.textContent = "✅ Cleaned: " + gs.totalCleaned;
-
-    if (taskTrash && gs.tasks) {
-      taskTrash.textContent = `- Throw Trash in Bin: ${gs.tasks.trashCollected}/${gs.tasks.trashRequired}`;
-      if (gs.tasks.trashCollected >= gs.tasks.trashRequired) {
-        taskTrash.style.color = "#4ade80"; // Checkmark color
-        taskTrash.textContent = `✅ Throw Trash in Bin: Done!`;
-      }
-    }
-
-    if (taskBottle && gs.tasks) {
-      taskBottle.textContent = `- Collect Bottles: ${gs.tasks.bottlesCollected}/${gs.tasks.bottlesRequired}`;
-      if (gs.tasks.bottlesCollected >= gs.tasks.bottlesRequired) {
-        taskBottle.style.color = "#4ade80"; // Checkmark color
-        taskBottle.textContent = `✅ Collect Bottles: Done!`;
-      }
-    }
 
     if (inventory && gs.inventory) {
       let invText = [];

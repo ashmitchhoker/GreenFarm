@@ -165,6 +165,22 @@ for (let y of [340, 680, 1020]) {
   }
 }
 
+// Place street lights along the vertical road
+for (let y of [400, 750, 1100]) {
+  INTERACTABLE_DEFS.push({
+    type: "street_light",
+    x: 1720, // Right side of the vertical road
+    y: y,
+    w: 50,
+    h: 150,
+    pollRate: 0.05,
+    interactEffect: -5,
+    cooldown: 1.0,
+    interactLabel: "Turn off street light",
+    isOn: true,
+  });
+}
+
 // Garbage truck
 INTERACTABLE_DEFS.push({
   type: "garbage_truck",
@@ -312,19 +328,29 @@ for (let i = 0; i < 12; i++) {
 
 /* ── Animal definitions ───────────────────────────────── */
 const ANIMAL_DEFS = [
-  // All animals moved across the river (bottom side of the map)
-  { x: 600, y: 1800, type: "cow" },
-  { x: 1200, y: 1900, type: "chicken" },
-  { x: 2100, y: 2000, type: "cow" },
-  { x: 1800, y: 2100, type: "chicken" },
-  { x: 800, y: 2200, type: "cow" },
-  { x: 1400, y: 1850, type: "chicken" },
-  { x: 2500, y: 1900, type: "cow" },
-  { x: 2400, y: 2100, type: "chicken" },
-  { x: 2800, y: 1800, type: "cow" },
-  { x: 2700, y: 2200, type: "chicken" },
-  { x: 1000, y: 2000, type: "cow" },
-  { x: 1600, y: 2150, type: "chicken" },
+  // Sea animals (in the river: y = 1550 to 1800)
+  { x: 300, y: 1600, type: "shark" },
+  { x: 800, y: 1700, type: "turtle" },
+  { x: 1200, y: 1650, type: "octopus" },
+  { x: 1800, y: 1720, type: "jellyfish" },
+  { x: 2200, y: 1600, type: "shark" },
+  { x: 2600, y: 1680, type: "turtle" },
+  { x: 400, y: 1750, type: "jellyfish" },
+  { x: 2800, y: 1650, type: "octopus" },
+
+  // Land animals (below the river: y > 1800)
+  { x: 600, y: 1950, type: "dog" },
+  { x: 1200, y: 1900, type: "fox" },
+  { x: 2100, y: 2000, type: "frog" },
+  { x: 1800, y: 2100, type: "dog" },
+  { x: 800, y: 2200, type: "fox" },
+  { x: 1400, y: 1850, type: "frog" },
+  { x: 2500, y: 1900, type: "dog" },
+  { x: 2400, y: 2100, type: "fox" },
+  { x: 2800, y: 1850, type: "frog" },
+  { x: 2700, y: 2200, type: "dog" },
+  { x: 1000, y: 2000, type: "fox" },
+  { x: 1600, y: 2150, type: "frog" },
 ];
 
 /* ── Ripple colours per type ──────────────────────────── */
