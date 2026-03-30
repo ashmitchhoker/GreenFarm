@@ -38,33 +38,9 @@ CONFIG.IS_TOUCH = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 const INTERACTABLE_DEFS = [
   // POLLUTION SOURCES (Industrial Zone - Top Right, and down bottom)
   {
-    type: "factory",
-    x: 2700,
-    y: 300,
-    w: 160,
-    h: 120,
-    pollRate: 0.35,
-    interactEffect: -8,
-    cooldown: 2.5,
-    interactLabel: "Shut down smokestacks (−8)",
-    icon: "🏭",
-  },
-  {
-    type: "factory",
-    x: 2400,
-    y: 250,
-    w: 140,
-    h: 110,
-    pollRate: 0.25,
-    interactEffect: -6,
-    cooldown: 2.5,
-    interactLabel: "Shut down smokestacks (−6)",
-    icon: "🏭",
-  },
-  {
     type: "trashbag",
-    x: 2200,
-    y: 600,
+    x: 500, // On bottom street (moved from top)
+    y: 1170, // Placed on the green grass just above the 4th road
     w: 60,
     h: 50,
     pollRate: 0.14,
@@ -75,8 +51,8 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "trashbag",
-    x: 2000,
-    y: 1100,
+    x: 700, // On the second street
+    y: 490, // Placed on the green grass just above the 2nd road
     w: 60,
     h: 50,
     pollRate: 0.14,
@@ -87,8 +63,8 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "trashbag",
-    x: 1800,
-    y: 1800,
+    x: 900, // On the third street
+    y: 830, // Placed on the green grass just above the 3rd road
     w: 60,
     h: 50,
     pollRate: 0.12,
@@ -133,89 +109,235 @@ const INTERACTABLE_DEFS = [
     interactLabel: "Clean oil spill (−7)",
     icon: "🛢️",
   },
-  {
-    type: "burning_waste",
-    x: 2600,
-    y: 1900,
-    w: 90,
-    h: 70,
-    pollRate: 0.3,
-    interactEffect: -9,
-    cooldown: 3.0,
-    interactLabel: "Extinguish burning waste (−9)",
-    icon: "🔥",
-  },
 
   // CLEANUP SITES (Nature & Farm Zones)
   // River runs across the whole map horizontally!
   {
     type: "river",
     x: 0,
-    y: 1450,
+    y: 1550, // Shifted down to create a riverfront
     w: 3200,
-    h: 180,
+    h: 250, // Extended downwards
     pollRate: -0.08,
     interactEffect: -12,
     cooldown: 2.0,
     interactLabel: "Clean the river (−12)",
     icon: "🌊",
   },
-  {
-    type: "windmill",
-    x: 1800,
-    y: 600,
-    w: 100,
-    h: 100,
-    isOn: false,
-    interactLabel: "Turn on windmill (+10)",
-  },
-  {
-    type: "windmill",
-    x: 2200,
-    y: 300,
-    w: 100,
-    h: 100,
-    isOn: false,
-    interactLabel: "Turn on windmill (+10)",
-    icon: "💨",
-  },
 ];
 
 /* ── Barrier definitions ──────────────────────────────── */
 const BARRIER_DEFS = [
   // walls
-  { x: 0, y: 0, w: CONFIG.WORLD_W, h: 14 },
+  { x: 0, y: -200, w: CONFIG.WORLD_W, h: 14 }, // Shifted top wall up to increase canvas space
   { x: 0, y: CONFIG.WORLD_H - 14, w: CONFIG.WORLD_W, h: 14 },
-  { x: 0, y: 0, w: 14, h: CONFIG.WORLD_H },
-  { x: CONFIG.WORLD_W - 14, y: 0, w: 14, h: CONFIG.WORLD_H },
-  { type: "car", x: 2300, y: 220, w: 120, h: 60 },
-  { type: "petrol_pump", x: 2000, y: 30, w: 400, h: 300 },
+  { x: 0, y: -200, w: 14, h: CONFIG.WORLD_H + 200 },
+  { x: CONFIG.WORLD_W - 14, y: -200, w: 14, h: CONFIG.WORLD_H + 200 },
+  { type: "car", x: 2050, y: 20, w: 120, h: 60 }, // Parked at the petrol pump
+  { type: "petrol_pump", x: 2000, y: -70, w: 350, h: 260 }, // Placed naturally above the road in the extended area
+  { type: "mud_house_placeholder", x: 1330, y: 660, w: 240, h: 240 }, // Magnetic placeholder on the second street rightmost spot
+  { type: "mud_house_placeholder", x: 1330, y: 1000, w: 240, h: 240 }, // Magnetic placeholder on the third street rightmost spot
 ];
 
-// Dynamically generate colony houses on the left
+// Dynamically generate colony houses on the left and a street trashcan ONLY at the top street
 for (let y of [340, 680, 1020]) {
-  for (let x = 100; x <= 1350; x += 250) {
-    BARRIER_DEFS.push({ type: (Math.random() > 0.5 ? "house1" : "house2"), x: x, y: y, w: 200, h: 200 });
+  for (let x = 100; x <= 1100; x += 250) {
+    // Reduced max X from 1350 to 1100 so right-most spot is empty
+    BARRIER_DEFS.push({
+      type: Math.random() > 0.5 ? "house1" : "house2",
+      x: x,
+      y: y,
+      w: 200,
+      h: 200,
+    });
   }
+
+  // Only place the trash can street for the top row (y === 340)
+  if (y === 340) {
+    INTERACTABLE_DEFS.push({
+      type: "trashcan_street",
+      x: 1400, // Positioned on the right side of the street block
+      y: y + 50, // Vertically centered to the house row
+      w: 120,
+      h: 140,
+      pollRate: 0,
+      interactEffect: -10,
+      cooldown: 2.0,
+      interactLabel: "Place trash in street bin",
+      icon: "♻️",
+    });
+  }
+}
+
+// Garbage truck
+INTERACTABLE_DEFS.push({
+  type: "garbage_truck",
+  x: 40,
+  y: 200,
+  w: 260,
+  h: 165,
+  interactLabel: "Call Garbage Truck",
+  cooldown: 5.0,
+  icon: "🚛",
+});
+
+// Dynamically generate factories and windmills on the right side
+let fCount = 0;
+for (let x = 1800; x <= 2800; x += 250) {
+  // Top right: Factories (y: 350)
+  INTERACTABLE_DEFS.push({
+    type: "factory",
+    x: x,
+    y: 350,
+    w: 200, // Scaled up by 25%
+    h: 150, // Scaled up by 25%
+    pollRate: 0.35,
+    interactEffect: -8,
+    cooldown: 2.5,
+    interactLabel: "Shut down smokestacks (−8)",
+    icon: "🏭",
+    fIdx: fCount % 5,
+  });
+
+  // Middle right: Windmills (y: 690)
+  INTERACTABLE_DEFS.push({
+    type: "windmill",
+    x: x,
+    y: 690,
+    w: 150, // Scaled up
+    h: 150, // Scaled up
+    isOn: false,
+  });
+  fCount++;
+}
+
+// Windmill Controller (placed to the right of windmills)
+INTERACTABLE_DEFS.push({
+  type: "windmill_controller",
+  x: 2950, // Right of the last windmill (2800)
+  y: 690, // Same y-level as windmills
+  w: 100,
+  h: 100,
+  isOn: false,
+  interactLabel: "Turn on all windmills (+50)",
+  icon: "🎛️",
+});
+
+// Generate Benches along the Riverfront (River is at y=1550, so benches around y=1420)
+for (let x = 150; x <= 3000; x += 400) {
+  // Avoid placing bench directly in the middle path if they are continuous, but doing 400 spacing is sparse.
+  if (x > 1400 && x < 1800) continue; // Skip near the vertical road intersection
+  BARRIER_DEFS.push({
+    type: "bench",
+    x: x,
+    y: 1420, // Shifted up to match the river's new y=1550 location
+    w: 120,
+    h: 80,
+  });
+}
+
+// Add riverfront recycling bins (Paper, Plastic, Non-recyclable)
+INTERACTABLE_DEFS.push(
+  {
+    type: "trashcan_paper",
+    x: 800,
+    y: 1450,
+    w: 80,
+    h: 80,
+    pollRate: 0,
+    interactEffect: -10,
+    cooldown: 2.0,
+    interactLabel: "Empty paper bin (−10)",
+    icon: "📄",
+  },
+  {
+    type: "trashcan_plastic",
+    x: 2000,
+    y: 1450,
+    w: 80,
+    h: 80,
+    pollRate: 0,
+    interactEffect: -10,
+    cooldown: 2.0,
+    interactLabel: "Empty plastic bin (−10)",
+    icon: "📦",
+  },
+  {
+    type: "trashcan_non_recyclable",
+    x: 2800,
+    y: 1450,
+    w: 80,
+    h: 80,
+    pollRate: 0,
+    interactEffect: -10,
+    cooldown: 2.0,
+    interactLabel: "Empty general bin (−10)",
+    icon: "🗑️",
+  },
+);
+
+// Add hazardous/contaminated bins in the factory corner
+INTERACTABLE_DEFS.push(
+  {
+    type: "trashcan_contaminated",
+    x: 3100,
+    y: 350,
+    w: 80,
+    h: 80,
+    pollRate: 0.1,
+    interactEffect: -15,
+    cooldown: 3.0,
+    interactLabel: "Empty contaminated waste (−15)",
+    icon: "☣️",
+  },
+  {
+    type: "trashcan_hazardous",
+    x: 3100,
+    y: 450,
+    w: 80,
+    h: 80,
+    pollRate: 0.1,
+    interactEffect: -15,
+    cooldown: 3.0,
+    interactLabel: "Empty hazardous waste (−15)",
+    icon: "☢️",
+  },
+);
+
+// Add plastic bottles near riverfront benches and water
+for (let i = 0; i < 12; i++) {
+  // Distribute along the river (y: 1450 to 1650), across the map (x: 200 to 2900)
+  let bx = 200 + Math.random() * 2700;
+  let by = 1480 + Math.random() * 120;
+  INTERACTABLE_DEFS.push({
+    type: Math.random() > 0.5 ? "plastic_bottle_1" : "plastic_bottle_2",
+    x: bx,
+    y: by,
+    w: 30, // Much smaller than trashcans
+    h: 30,
+    pollRate: 0.05,
+    interactEffect: -2,
+    cooldown: 0.5, // Fast to pick up
+    interactLabel: "Pick up plastic bottle (−2)",
+    icon: "🧴",
+  });
 }
 
 /* ── Animal definitions ───────────────────────────────── */
 const ANIMAL_DEFS = [
-  // Moved farm animals to the right side
-  { x: 2400, y: 550, type: "cow" },
-  { x: 2500, y: 600, type: "chicken" },
-  { x: 2300, y: 400, type: "cow" },
-  { x: 2200, y: 450, type: "chicken" },
-  { x: 2700, y: 600, type: "cow" },
-  { x: 2800, y: 750, type: "chicken" },
-  // Wild / roaming animals (moved right)
-  { x: 2500, y: 900, type: "cow" },
-  { x: 1800, y: 800, type: "chicken" },
-  // Animals across the river
+  // All animals moved across the river (bottom side of the map)
   { x: 600, y: 1800, type: "cow" },
   { x: 1200, y: 1900, type: "chicken" },
   { x: 2100, y: 2000, type: "cow" },
   { x: 1800, y: 2100, type: "chicken" },
+  { x: 800, y: 2200, type: "cow" },
+  { x: 1400, y: 1850, type: "chicken" },
+  { x: 2500, y: 1900, type: "cow" },
+  { x: 2400, y: 2100, type: "chicken" },
+  { x: 2800, y: 1800, type: "cow" },
+  { x: 2700, y: 2200, type: "chicken" },
+  { x: 1000, y: 2000, type: "cow" },
+  { x: 1600, y: 2150, type: "chicken" },
 ];
 
 /* ── Ripple colours per type ──────────────────────────── */

@@ -125,6 +125,25 @@ const Game = (() => {
           }
         }
 
+        // Snapping logic for mud house on magnetic placeholder
+        if (activeItem.type === "mud_house") {
+          for (let b of Objects.barriers) {
+            if (b.type === "mud_house_placeholder" && !b.filled) {
+              const cx = b.x + b.w / 2;
+              const cy = b.y + b.h / 2;
+              const dx = wx - cx;
+              const dy = wy - cy;
+
+              if (Math.hypot(dx, dy) < 200) {
+                // Snap exactly to center of the placeholder
+                wx = cx;
+                wy = cy;
+                break;
+              }
+            }
+          }
+        }
+
         ctx.save();
         ctx.globalAlpha = 0.5;
         // Since we are rendering the preview, apply world transform first
@@ -170,6 +189,18 @@ const Game = (() => {
             if (activeItem.type === "mud_house") {
               state.tasks.housesBuilt++;
               Particles.spawnFloat(wx, wy, "Mud House Built!", "#4ade80");
+
+              // Mark the nearest placeholder as filled so we don't snap to it anymore
+              for (let b of Objects.barriers) {
+                if (b.type === "mud_house_placeholder" && !b.filled) {
+                  const cx = b.x + b.w / 2;
+                  const cy = b.y + b.h / 2;
+                  if (Math.hypot(wx - cx, wy - cy) < 50) {
+                    // close enough to snap center
+                    b.filled = true;
+                  }
+                }
+              }
             } else if (activeItem.type === "solar_panel") {
               state.tasks.solarInstalled++;
               Particles.spawnFloat(wx, wy, "Solar Panel Installed!", "#4ade80");
@@ -270,7 +301,11 @@ const Game = (() => {
     let nearest = null,
       nearestDist = Infinity;
     for (const obj of Objects.interactables) {
-      if (!obj.active && obj.type === "trashbag") continue; // skip picked up trash
+      if (
+        !obj.active &&
+        (obj.type === "trashbag" || obj.type.startsWith("plastic_bottle"))
+      )
+        continue; // skip picked up trash
       if (!obj.interactLabel) continue; // skip decorative placed items
 
       const d = Utils.centreDist(Player.state, obj);
@@ -293,7 +328,7 @@ const Game = (() => {
 
     // Interaction
     if (Input.interact && nearest && nearest.timer <= 0) {
-      if (nearest.type === "trashcan" && state.inventory.trash === 0) {
+      if (nearest.type.startsWith("trashcan") && state.inventory.trash === 0) {
         // Can't interact with bin if no trash
         Input.consumeInteract();
       } else {
@@ -303,27 +338,80 @@ const Game = (() => {
           ? Math.abs(nearest.interactEffect) * 10
           : 0;
 
-        if (nearest.type === "trashbag") {
+        if (
+          nearest.type === "trashbag" ||
+          nearest.type.startsWith("plastic_bottle")
+        ) {
           state.inventory.trash++;
           nearest.active = false; // "Remove" the trash
           pts = 10; // Give some points just for picking up
-          Particles.spawnFloat(cx, cy - 20, "Trash picked up!", "#4ade80");
-        } else if (nearest.type === "trashcan") {
+          Particles.spawnFloat(
+            cx,
+            cy - 20,
+            nearest.type.startsWith("plastic_bottle")
+              ? "Bottle picked up!"
+              : "Trash picked up!",
+            "#4ade80",
+          );
+        } else if (nearest.type === "garbage_truck") {
+          const streetBin = Objects.interactables.find(
+            (o) => o.type === "trashcan_street",
+          );
+          if (!nearest.isMoving) {
+            if (streetBin && streetBin.trashCount > 0) {
+              nearest.isMoving = true;
+              nearest.actionState = "going";
+              nearest.startX = nearest.x;
+              nearest.targetX = streetBin.x - nearest.w + 40; // stop right at it
+              pts = 50;
+              Particles.spawnFloat(
+                cx,
+                cy - 20,
+                "Truck Dispatched! +50",
+                "#4ade80",
+              );
+            } else {
+              pts = 0;
+              Particles.spawnFloat(
+                cx,
+                cy - 20,
+                "No trash on street!",
+                "#ef4444",
+              );
+            }
+          } else {
+            pts = 0;
+          }
+        } else if (nearest.type.startsWith("trashcan")) {
           const thrown = state.inventory.trash;
+          if (nearest.type === "trashcan_street") {
+            nearest.trashCount = (nearest.trashCount || 0) + thrown;
+          }
           state.tasks.trashCollected += thrown;
           state.inventory.trash = 0;
           pts = thrown * 20; // 20 points per trash thrown in bin
           Particles.spawnFloat(cx, cy - 20, "+" + pts + " Points!", "#4ade80");
           updateTaskUI();
-        } else if (nearest.type === "windmill") {
+        } else if (nearest.type === "windmill_controller") {
           if (!nearest.isOn) {
             nearest.isOn = true;
-            nearest.timer = nearest.cooldown || 999999; // keep it on, prevent farming points
+            nearest.timer = nearest.cooldown || 999999;
+            nearest.interactLabel = ""; // Disable further interactions
             pts = 50;
+
+            // Turn on all windmills
+            Objects.interactables.forEach((obj) => {
+              if (obj.type === "windmill") {
+                obj.isOn = true;
+                obj.timer = 999999;
+                obj.interactLabel = "";
+              }
+            });
+
             Particles.spawnFloat(
               cx,
               cy - 20,
-              "Windmill Active! +50",
+              "Windmills Active! +50",
               "#4ade80",
             );
           }
@@ -341,11 +429,38 @@ const Game = (() => {
       }
     }
 
-    // Factory smoke
+    // Factory smoke and truck movement
     for (const obj of Objects.interactables) {
       if (obj.type === "factory" && obj.active) {
         if (Math.random() < (state.pollution / 60) * dt * 40) {
           Particles.spawnSmoke(obj.x, obj.y, obj.w);
+        }
+      } else if (obj.type === "garbage_truck" && obj.isMoving) {
+        if (obj.actionState === "going") {
+          obj.x += 250 * dt; // speed
+          if (obj.x >= obj.targetX) {
+            obj.x = obj.targetX;
+            obj.actionState = "picking_up";
+            obj.waitTime = 1.5; // wait 1.5s
+          }
+        } else if (obj.actionState === "picking_up") {
+          obj.waitTime -= dt;
+          if (obj.waitTime <= 0) {
+            const streetBin = Objects.interactables.find(
+              (o) => o.type === "trashcan_street",
+            );
+            if (streetBin) streetBin.trashCount = 0; // Empty the trash
+            obj.actionState = "leaving";
+          }
+        } else if (obj.actionState === "leaving") {
+          obj.x += 250 * dt;
+          if (obj.x > 3200) {
+            // Offscreen right
+            // Reset to start
+            obj.x = obj.startX;
+            obj.isMoving = false;
+            obj.actionState = "";
+          }
         }
       }
     }

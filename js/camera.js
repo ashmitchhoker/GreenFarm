@@ -3,8 +3,11 @@
    ══════════════════════════════════════════════════════════ */
 
 const Camera = (() => {
-  let x = 0, y = 0;
-  let zoom = CONFIG.IS_TOUCH ? CONFIG.ZOOM_DEFAULT_MOBILE : CONFIG.ZOOM_DEFAULT_DESKTOP;
+  let x = 0,
+    y = 0;
+  let zoom = CONFIG.IS_TOUCH
+    ? CONFIG.ZOOM_DEFAULT_MOBILE
+    : CONFIG.ZOOM_DEFAULT_DESKTOP;
 
   function update(player, vw, vh) {
     // Visible world area at current zoom
@@ -17,7 +20,7 @@ const Camera = (() => {
 
     // Clamp
     x = Math.max(0, Math.min(x, CONFIG.WORLD_W - visW));
-    y = Math.max(0, Math.min(y, CONFIG.WORLD_H - visH));
+    y = Math.max(-200, Math.min(y, CONFIG.WORLD_H - visH)); // Allow negative Y to reveal the extended top canvas area
   }
 
   function adjustZoom(delta) {
@@ -33,9 +36,15 @@ const Camera = (() => {
   }
 
   return {
-    get x() { return x; },
-    get y() { return y; },
-    get zoom() { return zoom; },
+    get x() {
+      return x;
+    },
+    get y() {
+      return y;
+    },
+    get zoom() {
+      return zoom;
+    },
     update,
     adjustZoom,
     applyTransform,

@@ -11,10 +11,10 @@ const Shop = (() => {
     {
       id: "mud_house",
       name: "Mud House",
-      icon: "assets/wood_house/house1.png",
+      icon: "assets/wood_house/house3.png",
       type: "mud_house",
-      w: 160,
-      h: 160,
+      w: 200, // Scaled up
+      h: 200, // Scaled up
     },
     {
       id: "solar_panel",

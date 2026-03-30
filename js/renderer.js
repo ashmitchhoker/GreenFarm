@@ -9,16 +9,78 @@ const Renderer = (() => {
   let factoryImages = [];
   let waterPatterns = [];
   let garbageBagImg = new Image();
-  let trashCanImg = new Image();
+  let trashCanStreetImg = new Image();
+  let trashCanPaperImg = new Image();
+  let trashCanPlasticImg = new Image();
+  let trashCanNonRecyclableImg = new Image();
+  let trashCanContaminatedImg = new Image();
+  let trashCanHazardousImg = new Image();
   let windmillBaseImg = new Image();
   let windmillFanImg = new Image();
   let roadImgs = { horiz: new Image(), vert: new Image() };
 
   let house1Img = new Image();
   let house2Img = new Image();
+  let benchImg = new Image();
   let carImg = new Image();
   let fenceImg = new Image();
   let petrolPumpImg = new Image();
+  let bottle1Img = new Image();
+  let bottle2Img = new Image();
+  let carParkImg = new Image();
+  let garbageTruckImg = new Image();
+
+  const pickUpFrames = [];
+  for (let i = 0; i <= 12; i++) {
+    const img = new Image();
+    img.src = `assets/garbage/garbage_truck_animation/pick up container/vehicle_pickUpContainer_${i.toString().padStart(2, "0")}.png`;
+    pickUpFrames.push(img);
+  }
+
+  const gifElements = new Map();
+
+  function updateGifOverlay(key, src, wx, wy, ww, wh) {
+    const overlay = document.getElementById("gif-overlay");
+    if (!overlay) return;
+    let img = gifElements.get(key);
+    if (!img) {
+      img = document.createElement("img");
+      img.src = src;
+      img.style.position = "absolute";
+      overlay.appendChild(img);
+      gifElements.set(key, img);
+    }
+    // Convert world space to screen space based on Camera
+    const sx = (wx - Camera.x) * Camera.zoom;
+    const sy = (wy - Camera.y) * Camera.zoom;
+    const sw = ww * Camera.zoom;
+    const sh = wh * Camera.zoom;
+
+    // Only update styles if they have changed (performance optimization)
+    const leftPx = sx + "px";
+    if (img.style.left !== leftPx) img.style.left = leftPx;
+
+    const topPx = sy + "px";
+    if (img.style.top !== topPx) img.style.top = topPx;
+
+    const widthPx = sw + "px";
+    if (img.style.width !== widthPx) img.style.width = widthPx;
+
+    const heightPx = sh + "px";
+    if (img.style.height !== heightPx) img.style.height = heightPx;
+
+    img.dataset.lastSeen = Date.now();
+  }
+
+  function pruneGifs() {
+    const now = Date.now();
+    for (const [key, img] of gifElements.entries()) {
+      if (now - parseInt(img.dataset.lastSeen, 10) > 100) {
+        img.remove();
+        gifElements.delete(key);
+      }
+    }
+  }
 
   function init(mainCtx, mCtx, mw, mh) {
     ctx = mainCtx;
@@ -44,14 +106,28 @@ const Renderer = (() => {
     }
 
     // Load factory images
-    for (let i = 1; i <= 3; i++) {
+    const factoryFiles = [
+      "factory 1.png",
+      "factory 2.png",
+      "factory 3.gif",
+      "factory 4.png",
+      "factory 5.gif",
+    ];
+    factoryFiles.forEach((file) => {
       const img = new Image();
-      img.src = `assets/factory/factory ${i}.png`;
+      img.src = `assets/factory/${file}`;
       factoryImages.push(img);
-    }
+    });
 
     garbageBagImg.src = "assets/garbage/garbage bag.png";
-    trashCanImg.src = "assets/garbage/trash can.png";
+    trashCanStreetImg.src = "assets/garbage/trash_can_street.png";
+    trashCanPaperImg.src = "assets/garbage/paper_trash.png";
+    trashCanPlasticImg.src = "assets/garbage/plastic_trash.png";
+    trashCanNonRecyclableImg.src = "assets/garbage/non_recyclable_trash.png";
+    trashCanContaminatedImg.src = "assets/garbage/contaiminated_trash.png"; // typo intentionally matches fs
+    trashCanHazardousImg.src = "assets/garbage/hazardous_trash.png";
+    bottle1Img.src = "assets/plastic_bottles/bottle 1.png";
+    bottle2Img.src = "assets/plastic_bottles/bottle 2.png";
     windmillBaseImg.src = "assets/windmill/windmill_nofan.png";
     windmillFanImg.src = "assets/windmill/fan.png";
 
@@ -61,9 +137,13 @@ const Renderer = (() => {
 
     house1Img.src = "assets/house/house 1.png";
     house2Img.src = "assets/house/house 2.png";
+    benchImg.src = "assets/house/bench.png";
     carImg.src = "assets/house/car.png";
     fenceImg.src = "assets/house/fence.png";
     petrolPumpImg.src = "assets/petrol_pump.png";
+    carParkImg.src = "assets/car_park/car_park.png"; // Load car park
+    garbageTruckImg.src =
+      "assets/garbage/garbage_truck_animation/in motion/vehicle_inMotion_00.png"; // Load truck
 
     // Load water images
     const waterFiles = [
@@ -108,6 +188,8 @@ const Renderer = (() => {
     // Reset to screen space
     Camera.resetTransform(ctx);
 
+    pruneGifs();
+
     // HUD is handled in DOM
     updateHUD(gameState);
     drawMinimap(t, vw, vh);
@@ -118,17 +200,17 @@ const Renderer = (() => {
     if (groundPattern) {
       // Draw textured grass ground
       ctx.fillStyle = groundPattern;
-      ctx.fillRect(0, 0, CONFIG.WORLD_W, CONFIG.WORLD_H);
+      ctx.fillRect(0, -250, CONFIG.WORLD_W, CONFIG.WORLD_H + 250);
 
       // If there is pollution, overlay a brownish tint
       if (t > 0) {
         ctx.fillStyle = `rgba(120, 85, 43, ${t * 0.85})`; // Darker brown alpha based on pollution
-        ctx.fillRect(0, 0, CONFIG.WORLD_W, CONFIG.WORLD_H);
+        ctx.fillRect(0, -250, CONFIG.WORLD_W, CONFIG.WORLD_H + 250);
       }
     } else {
       // Fallback to solid color if image not loaded yet
       ctx.fillStyle = Utils.lerpColor("#4ade80", "#78552b", t);
-      ctx.fillRect(0, 0, CONFIG.WORLD_W, CONFIG.WORLD_H);
+      ctx.fillRect(0, -250, CONFIG.WORLD_W, CONFIG.WORLD_H + 250);
       if (t > 0.3) {
         ctx.fillStyle = `rgba(60,30,0,${(t - 0.3) * 0.35})`;
         ctx.fillRect(0, 0, CONFIG.WORLD_W, CONFIG.WORLD_H);
@@ -188,9 +270,9 @@ const Renderer = (() => {
     const ROAD_W = 140;
 
     // Main vertical road dividing left colony and right side
-    drawTiled(roadImgs.vert, false, 1560, 200, ROAD_W, 1250);
+    drawTiled(roadImgs.vert, false, 1560, 200, ROAD_W, 1160); // Ends at bottom horizontal road (1220 + 140)
 
-    // Right-side horizontal road from vertical road to factory
+    // Right-side horizontal roads
     drawTiled(
       roadImgs.horiz,
       true,
@@ -199,18 +281,36 @@ const Renderer = (() => {
       3200 - (1560 + ROAD_W),
       ROAD_W,
     );
+    drawTiled(
+      roadImgs.horiz,
+      true,
+      1560 + ROAD_W,
+      540,
+      3200 - (1560 + ROAD_W),
+      ROAD_W,
+    );
+    drawTiled(
+      roadImgs.horiz,
+      true,
+      1560 + ROAD_W,
+      880,
+      3200 - (1560 + ROAD_W),
+      ROAD_W,
+    );
+    drawTiled(
+      roadImgs.horiz,
+      true,
+      1560 + ROAD_W,
+      1220,
+      3200 - (1560 + ROAD_W),
+      ROAD_W,
+    );
 
-    // Colony Horizontal Roads (Left side only)
+    // Colony Horizontal Roads (Left side)
     drawTiled(roadImgs.horiz, true, 0, 200, 1560, ROAD_W); // Top
     drawTiled(roadImgs.horiz, true, 0, 540, 1560, ROAD_W);
     drawTiled(roadImgs.horiz, true, 0, 880, 1560, ROAD_W);
     drawTiled(roadImgs.horiz, true, 0, 1220, 1560, ROAD_W); // Bottom before river
-
-    // Bridge details
-    ctx.fillStyle = "#451a03";
-    for (let w = 1450; w < 1630; w += 20) {
-      ctx.fillRect(1580, w, 100, 2);
-    }
   }
 
   /* ── Trees ──────────────────────────────────────────── */
@@ -308,24 +408,43 @@ const Renderer = (() => {
 
     switch (obj.type) {
       case "factory":
-        // t is pollution from 0 to 1
-        let fIdx = 0;
-        if (t > 0.33 && t <= 0.66) fIdx = 1;
-        if (t > 0.66) fIdx = 2;
+        // Use a persistent index tied to the object's position so it doesn't flicker
+        let fIdx =
+          typeof obj.fIdx !== "undefined"
+            ? obj.fIdx
+            : Math.floor(obj.x / 100 + obj.y / 100) % factoryImages.length;
 
         const fImg = factoryImages[fIdx];
         if (fImg && fImg.complete) {
-          // Adjust sizing depending on PNG dimensions.
-          // The PNG probably needs a bit more height for smokestacks.
-          const fw = obj.w * 1.5;
-          const fh = obj.h * 2.0;
-          ctx.drawImage(
-            fImg,
-            cx - fw / 2,
-            obj.y + obj.h - fh, // Base aligns with the bottom of the hitbox
-            fw,
-            fh,
-          );
+          // Adjust sizing depending on PNG dimensions. Keep aspect ratio.
+          let fw = 250; // default w
+          let fh = 200; // default h
+          if (fImg.width && fImg.height) {
+            const aspect = fImg.width / fImg.height;
+            // Target specific visual size for balance, scaled up by 25%
+            fh = 200;
+            fw = fh * aspect;
+          }
+
+          if (fImg.src && fImg.src.includes(".gif")) {
+            // For GIFs, we use the DOM overlay since canvas drawImage doesn't animate them
+            updateGifOverlay(
+              `factory_${obj.x}_${obj.y}`,
+              fImg.src,
+              cx - fw / 2,
+              obj.y + obj.h - fh,
+              fw,
+              fh,
+            );
+          } else {
+            ctx.drawImage(
+              fImg,
+              cx - fw / 2,
+              obj.y + obj.h - fh, // Base aligns with the bottom of the hitbox
+              fw,
+              fh,
+            );
+          }
         } else {
           // Fallback shapes
           ctx.fillStyle = "#57534e";
@@ -341,10 +460,124 @@ const Renderer = (() => {
         }
         break;
 
-      case "trashcan":
-        if (trashCanImg && trashCanImg.complete) {
-          // Keep aspect ratio roughly, or just fit to box
-          ctx.drawImage(trashCanImg, obj.x, obj.y, obj.w, obj.h);
+      case "windmill_controller":
+        // Placeholder for controller that will be added later
+        ctx.fillStyle = obj.isOn ? "#22c55e" : "#3b82f6"; // Green if on, Blue if off
+        ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        ctx.fillStyle = obj.isOn ? "#16a34a" : "#1d4ed8";
+        ctx.fillRect(obj.x + 10, obj.y + 10, obj.w - 20, obj.h - 20);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 20px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("WINDMILL", cx, cy - 5);
+        ctx.fillText(obj.isOn ? "ACTIVE" : "CONTROL", cx, cy + 15);
+        break;
+
+      case "trashcan_street":
+        if (trashCanStreetImg && trashCanStreetImg.complete) {
+          ctx.drawImage(trashCanStreetImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#333";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+        if (obj.trashCount > 0) {
+          // Check if any garbage truck is currently picking up right next to this bin
+          const truck = Objects.interactables.find(
+            (t) =>
+              t.type === "garbage_truck" &&
+              t.actionState === "picking_up" &&
+              t.waitTime > 0,
+          );
+
+          let offsetX = 0;
+          let offsetY = 0;
+          let hideBags = false;
+
+          if (truck) {
+            // Animate the bags sticking to the truck's container
+            const totalFrames = 13;
+            let frameIdx = Math.floor(
+              ((1.5 - truck.waitTime) / 1.5) * totalFrames,
+            );
+            if (frameIdx < 0) frameIdx = 0;
+            if (frameIdx >= totalFrames) frameIdx = totalFrames - 1;
+
+            // Heuristic path of the container being lifted (x, y) relative to bin
+            const path = [
+              [0, 0], // 0
+              [0, -10], // 1
+              [-5, -30], // 2
+              [-15, -50], // 3
+              [-30, -80], // 4
+              [-50, -100], // 5
+              [-70, -100], // 6
+              [-90, -90], // 7
+              [-110, -70], // 8
+              [-120, -40], // 9
+              [0, 0], // 10 (hidden)
+              [0, 0], // 11 (hidden)
+              [0, 0], // 12 (hidden)
+            ];
+
+            if (frameIdx >= 10) {
+              hideBags = true;
+            } else {
+              offsetX = path[frameIdx][0];
+              offsetY = path[frameIdx][1];
+            }
+          }
+
+          if (!hideBags) {
+            for (let i = 0; i < obj.trashCount; i++) {
+              if (garbageBagImg && garbageBagImg.complete) {
+                ctx.drawImage(
+                  garbageBagImg,
+                  obj.x + 30 + (i % 2) * 20 + offsetX,
+                  obj.y - 20 - Math.floor(i / 2) * 15 + offsetY,
+                  40,
+                  30,
+                );
+              }
+            }
+          }
+        }
+        break;
+      case "trashcan_paper":
+        if (trashCanPaperImg && trashCanPaperImg.complete) {
+          ctx.drawImage(trashCanPaperImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#333";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+        break;
+      case "trashcan_plastic":
+        if (trashCanPlasticImg && trashCanPlasticImg.complete) {
+          ctx.drawImage(trashCanPlasticImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#333";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+        break;
+      case "trashcan_non_recyclable":
+        if (trashCanNonRecyclableImg && trashCanNonRecyclableImg.complete) {
+          ctx.drawImage(trashCanNonRecyclableImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#333";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+        break;
+      case "trashcan_contaminated":
+        if (trashCanContaminatedImg && trashCanContaminatedImg.complete) {
+          ctx.drawImage(trashCanContaminatedImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#333";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
+        break;
+      case "trashcan_hazardous":
+        if (trashCanHazardousImg && trashCanHazardousImg.complete) {
+          ctx.drawImage(trashCanHazardousImg, obj.x, obj.y, obj.w, obj.h);
         } else {
           ctx.fillStyle = "#333";
           ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
@@ -389,6 +622,32 @@ const Renderer = (() => {
         }
         break;
 
+      case "garbage_truck":
+        let currentTruckImg = garbageTruckImg;
+        if (obj.actionState === "picking_up") {
+          const totalFrames = 13;
+          let frameIdx = Math.floor(((1.5 - obj.waitTime) / 1.5) * totalFrames);
+          if (frameIdx < 0) frameIdx = 0;
+          if (frameIdx >= totalFrames) frameIdx = totalFrames - 1;
+          if (pickUpFrames[frameIdx] && pickUpFrames[frameIdx].complete) {
+            currentTruckImg = pickUpFrames[frameIdx];
+          }
+        }
+
+        if (
+          currentTruckImg &&
+          currentTruckImg.complete &&
+          currentTruckImg.width > 0
+        ) {
+          ctx.drawImage(currentTruckImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#16a34a"; // green
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.fillStyle = "#fff";
+          ctx.fillText("TRUCK", obj.x + 20, obj.y + 30);
+        }
+        break;
+
       case "trashbag":
         if (!obj.active) break; // Don't draw if picked up
         if (garbageBagImg && garbageBagImg.complete) {
@@ -398,6 +657,19 @@ const Renderer = (() => {
           ctx.beginPath();
           ctx.arc(cx, cy, obj.w / 2, 0, Math.PI * 2);
           ctx.fill();
+        }
+        break;
+
+      case "plastic_bottle_1":
+      case "plastic_bottle_2":
+        if (!obj.active) break; // Don't draw if picked up
+        const bottleImg =
+          obj.type === "plastic_bottle_1" ? bottle1Img : bottle2Img;
+        if (bottleImg && bottleImg.complete) {
+          ctx.drawImage(bottleImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#add8e6";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
         }
         break;
 
@@ -533,31 +805,35 @@ const Renderer = (() => {
     }
 
     // Proximity glow
-    const d = Utils.centreDist(Player.state, obj);
-    const ir = Objects.getInteractRadius(obj);
-    if (d < ir + 40) {
-      const ga = 0.25 + Math.sin(now / 300) * 0.1;
-      ctx.strokeStyle =
-        obj.pollRate > 0 ? `rgba(248,113,113,${ga})` : `rgba(74,222,128,${ga})`;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 5]);
-      ctx.beginPath();
-      ctx.arc(cx, cy, ir, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      if (obj.timer > 0) {
-        ctx.strokeStyle = "rgba(255,255,255,.25)";
-        ctx.lineWidth = 3;
+    if (obj.interactLabel) {
+      const d = Utils.centreDist(Player.state, obj);
+      const ir = Objects.getInteractRadius(obj);
+      if (d < ir + 40) {
+        const ga = 0.25 + Math.sin(now / 300) * 0.1;
+        ctx.strokeStyle =
+          obj.pollRate > 0
+            ? `rgba(248,113,113,${ga})`
+            : `rgba(74,222,128,${ga})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 5]);
         ctx.beginPath();
-        ctx.arc(
-          cx,
-          cy,
-          Math.max(obj.w, obj.h) / 2 + 8,
-          -Math.PI / 2,
-          -Math.PI / 2 + (1 - obj.timer / obj.cooldown) * Math.PI * 2,
-        );
+        ctx.arc(cx, cy, ir, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (obj.timer > 0) {
+          ctx.strokeStyle = "rgba(255,255,255,.25)";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(
+            cx,
+            cy,
+            Math.max(obj.w, obj.h) / 2 + 8,
+            -Math.PI / 2,
+            -Math.PI / 2 + (1 - obj.timer / obj.cooldown) * Math.PI * 2,
+          );
+          ctx.stroke();
+        }
       }
     }
   }
@@ -580,6 +856,13 @@ const Renderer = (() => {
           ctx.fillStyle = "#78716c";
           ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
         }
+      } else if (obj.type === "bench") {
+        if (benchImg.complete && benchImg.width > 0) {
+          ctx.drawImage(benchImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#A0522D";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        }
       } else if (obj.type === "car") {
         if (carImg.complete && carImg.width > 0) {
           ctx.drawImage(carImg, obj.x, obj.y, obj.w, obj.h);
@@ -594,6 +877,15 @@ const Renderer = (() => {
           ctx.fillStyle = "#ef4444";
           ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
         }
+      } else if (obj.type === "car_park") {
+        if (carParkImg.complete && carParkImg.width > 0) {
+          ctx.drawImage(carParkImg, obj.x, obj.y, obj.w, obj.h);
+        } else {
+          ctx.fillStyle = "#475569";
+          ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+          ctx.fillStyle = "#fff";
+          ctx.fillText("P", obj.x + 30, obj.y + 40);
+        }
       }
     }
   }
@@ -607,10 +899,10 @@ const Renderer = (() => {
     }
     ctx.fillStyle = "#a8a29e";
     for (let fx = 0; fx < CONFIG.WORLD_W; fx += 80) {
-      ctx.fillRect(fx, 0, 6, 14);
+      ctx.fillRect(fx, -200, 6, 14); // Adjusted for new top map boundary
       ctx.fillRect(fx, CONFIG.WORLD_H - 14, 6, 14);
     }
-    for (let fy = 0; fy < CONFIG.WORLD_H; fy += 80) {
+    for (let fy = -200; fy < CONFIG.WORLD_H; fy += 80) {
       ctx.fillRect(0, fy, 14, 6);
       ctx.fillRect(CONFIG.WORLD_W - 14, fy, 14, 6);
     }

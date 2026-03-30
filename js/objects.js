@@ -23,20 +23,25 @@ const Objects = (() => {
     trees.length = 0;
     const avoid = [
       ...interactables,
-      barriers[4],
-      barriers[5],
+      ...barriers,
       {
         x: CONFIG.WORLD_W / 2 - 60,
         y: CONFIG.WORLD_H / 2 - 60,
         w: 120,
         h: 120,
       },
+      // Avoid the roads to prevent trees on them
+      { x: 1560, y: 0, w: 140, h: 2400 }, // Full main vertical road
+      { x: 0, y: 200, w: 3200, h: 140 }, // Horizontal road 1
+      { x: 0, y: 540, w: 3200, h: 140 }, // Horizontal road 2
+      { x: 0, y: 880, w: 3200, h: 140 }, // Horizontal road 3
+      { x: 0, y: 1220, w: 3200, h: 140 }, // Horizontal road 4
     ];
 
     // Tree generation zones for a structured town
     const zones = [
       { x: 1800, y: 1000, w: 1200, h: 400, density: 25 }, // Forest buffer right side
-      { x: 2200, y: 150, w: 900, h: 500, density: 15 }, // Park area on right
+      // Removed park area on right (factory area) to make room for controller
       { x: 2000, y: 800, w: 1000, h: 500, density: 30 }, // Another dense forest buffer above the river
       { x: 100, y: 1800, w: 2000, h: 500, density: 35 }, // South forest across the river
     ];
