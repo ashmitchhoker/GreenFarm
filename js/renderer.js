@@ -1015,14 +1015,6 @@ const Renderer = (() => {
           ctx.strokeStyle = `rgba(74, 222, 128, ${0.5 + Math.sin(now / 200) * 0.5})`;
           ctx.lineWidth = 4;
           ctx.strokeRect(obj.x - 5, obj.y - 5, obj.w + 10, obj.h + 10);
-          ctx.fillStyle = "#fff";
-          ctx.font = "bold 20px 'Comic Sans MS', sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(
-            "Click to Drive!",
-            obj.x + obj.w / 2,
-            obj.y - 15 + Math.sin(now / 150) * 5,
-          );
           ctx.restore();
         }
       } else if (obj.type === "petrol_pump") {

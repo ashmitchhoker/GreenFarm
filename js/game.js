@@ -369,7 +369,9 @@ const Game = (() => {
               });
               state.tasks.treesPlanted++;
               state.score -= activeItem.cost;
-              Particles.spawnFloat(wx, wy, `Tree Planted! -${activeItem.cost} Coins`, "#4ade80");
+              state.score += 2; // Reward for planting
+              Particles.spawnFloat(wx, wy, `Tree Planted! +2 Coins`, "#4ade80");
+              Particles.spawnCoin(wx, wy - 40, 2);
             } else {
               Objects.interactables.push({
                 ...placedItem,
@@ -533,7 +535,7 @@ const Game = (() => {
   }
 
   function showTaskToast(taskIndex) {
-    if (taskIndex > 10) return; // Images only available up to task 10
+    if (taskIndex > 11) return; // Images only available up to task 11
 
     const toast = document.getElementById("objective-toast");
     const imgEl = document.getElementById("objective-toast-img");
@@ -976,8 +978,8 @@ const Game = (() => {
           state.score += pts;
           state.totalCleaned++;
         }
+        Input.consumeInteract();
       }
-      Input.consumeInteract();
     }
 
     // Factory smoke and truck movement
@@ -1037,7 +1039,7 @@ const Game = (() => {
       if (gCar) {
         if (state.pucState === 0) {
           const d = Utils.centreDist(Player.state, gCar);
-          if (d < 150) {
+          if (d < 250) {
             const hintEl = document.getElementById("interaction-hint");
             hintEl.classList.add("visible");
             hintEl.innerHTML = CONFIG.IS_TOUCH ? `Tap <strong>E</strong> to drive car` : `Press <strong>E</strong> to drive car`;
