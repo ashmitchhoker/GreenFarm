@@ -46,6 +46,7 @@ const Game = (() => {
   };
 
   let lastTime = 0;
+  let lastActiveTaskLabel = null;
 
   /* ── Init ────────────────────────────────────────────── */
   function init() {
@@ -459,6 +460,12 @@ const Game = (() => {
         el.style.color = "#ffffff";
         el.textContent = `- ${t.label}: ${current}/${req}`;
         foundActive = true;
+
+        // Check if this task is newly active
+        if (lastActiveTaskLabel !== t.label) {
+          lastActiveTaskLabel = t.label;
+          showTaskToast(t.label);
+        }
       } else {
         // This task is yet to be unlocked
         el.style.display = "none";
@@ -471,6 +478,26 @@ const Game = (() => {
     }
 
     checkWinCondition();
+  }
+
+  function showTaskToast(taskName) {
+    const toast = document.getElementById("objective-toast");
+    const textEl = document.getElementById("objective-toast-text");
+    if (!toast || !textEl) return;
+
+    textEl.textContent = taskName;
+
+    // Reset classes to play animation anew
+    toast.className = "toast-hidden";
+    void toast.offsetWidth; // Trigger reflow to restart CSS transitions
+    toast.className = "toast-center"; // Drop into center
+
+    // After 3 seconds, fly to the top-left (where the task container is)
+    setTimeout(() => {
+      if (toast.className === "toast-center") {
+        toast.className = "toast-corner";
+      }
+    }, 4000);
   }
 
   function checkWinCondition() {

@@ -25,6 +25,43 @@ body {
   user-select: none;
 }
 
+/* ── OBJECTIVE TOAST ───────────────────────────────────── */
+#objective-toast {
+  position: fixed;
+  top: 60px;
+  left: 20px;
+  transform: scale(0);
+  background: rgba(0, 0, 0, 0.9);
+  border: 3px solid #4ade80;
+  border-radius: 16px;
+  padding: 20px 40px;
+  text-align: center;
+  color: white;
+  z-index: 2500;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+  box-sizing: border-box;
+}
+
+#objective-toast.toast-center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  transition:
+    opacity 0.4s ease,
+    transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#objective-toast.toast-corner {
+  top: 60px;
+  left: 25px;
+  transform: translate(0, 0) scale(0); /* shrink away pointing at the tasks */
+  opacity: 0;
+  transition: all 0.6s cubic-bezier(0.36, 0, 0.66, -0.56);
+}
+
 /* ── HUD ──────────────────────────────────────────────── */
 #hud {
   position: fixed;
