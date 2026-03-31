@@ -78,7 +78,13 @@ const Game = (() => {
 
     window.Image = OriginalImage; // restore
 
-    const totalAssets = trackImages.length;
+    const audioElements = [
+      document.getElementById("bgMusic"),
+      document.getElementById("interactionSound"),
+      document.getElementById("taskDoneSound"),
+    ].filter(Boolean);
+
+    const totalAssets = trackImages.length + audioElements.length;
     const updateProgress = () => {
       loadedCount++;
       const pct = Math.floor((loadedCount / totalAssets) * 100);
@@ -101,6 +107,18 @@ const Game = (() => {
         } else {
           img.addEventListener("load", updateProgress);
           img.addEventListener("error", updateProgress); // count errors so it doesn't hang
+        }
+      });
+
+      audioElements.forEach((audio) => {
+        if (audio.readyState >= 3) {
+          // HAVE_FUTURE_DATA or higher
+          updateProgress();
+        } else {
+          audio.addEventListener("canplaythrough", updateProgress, {
+            once: true,
+          });
+          audio.addEventListener("error", updateProgress, { once: true });
         }
       });
     }
@@ -378,67 +396,67 @@ const Game = (() => {
     const taskSequence = [
       {
         id: "task-lights",
-        label: "Turn Off Street Lights",
+        label: "Turn Off Street Lights On Sidewalks",
         key: "lightsTurnedOff",
         req: "lightsRequired",
       },
       {
         id: "task-trash",
-        label: "Throw Garbage in Bin",
+        label: "Throw Trash Bags From House Streets In Green Bin",
         key: "trashCollected",
         req: "trashRequired",
       },
       {
         id: "task-truck",
-        label: "Call Garbage Truck",
+        label: "Call the Garbage Truck Down the Road",
         key: "truckCalled",
         req: "truckRequired",
       },
       {
         id: "task-bottle",
-        label: "Collect Water Bottles",
+        label: "Pick Plastic Bottles From River and Put in Blue Bin",
         key: "bottlesCollected",
         req: "bottlesRequired",
       },
       {
         id: "task-oil",
-        label: "Clean Oil Spill",
+        label: "Clean Oil Spills In Village Paths",
         key: "oilSpillsCleaned",
         req: "oilSpillsRequired",
       },
       {
         id: "task-factory",
-        label: "Service Factories",
+        label: "Service Factories To Stop Pollution",
         key: "factoriesServiced",
         req: "factoriesRequired",
       },
       {
         id: "task-windmill",
-        label: "Start Windmills",
+        label: "Start Windmills To Generate Clean Energy",
         key: "windmillsStarted",
         req: "windmillsRequired",
       },
       {
         id: "task-plant",
-        label: "Plant Trees",
+        label: "Buy Tree Seeds And Plant Them In Village",
         key: "treesPlanted",
         req: "treesRequired",
       },
       {
         id: "task-solar",
-        label: "Install Solar Panel",
+        label: "Buy & Install Solar Panel Near Houses",
         key: "solarInstalled",
         req: "solarRequired",
       },
       {
         id: "task-house",
-        label: "Build Mud House",
+        label: "Buy Eco-Friendly Mud House From Shop",
         key: "housesBuilt",
         req: "housesRequired",
       },
       {
         id: "task-puc",
-        label: "Get PUC Done",
+        label: "Get PUC Verification For White Car At Gas Station",
         key: "pucDone",
         req: "pucRequired",
       },
@@ -463,6 +481,10 @@ const Game = (() => {
 
         // Check if this task is newly active
         if (lastActiveTaskLabel !== t.label) {
+          if (lastActiveTaskLabel !== null) {
+            // Task actually changed (not first load), meaning previous task was completed
+            playTaskDoneSound();
+          }
           lastActiveTaskLabel = t.label;
           showTaskToast(t.label);
         }
@@ -475,6 +497,10 @@ const Game = (() => {
     const allDoneEl = document.getElementById("task-all-done");
     if (allDoneEl) {
       allDoneEl.style.display = !foundActive ? "block" : "none";
+      if (!foundActive && lastActiveTaskLabel !== "ALL_DONE") {
+        playTaskDoneSound();
+        lastActiveTaskLabel = "ALL_DONE";
+      }
     }
 
     checkWinCondition();
@@ -498,6 +524,24 @@ const Game = (() => {
         toast.className = "toast-corner";
       }
     }, 4000);
+  }
+
+  function playInteractionSound() {
+    const audio = document.getElementById("interactionSound");
+    if (audio) {
+      audio.currentTime = 0;
+      audio.volume = 0.5; // adjust volume as needed
+      audio.play().catch((e) => console.log("Interaction sound blocked"));
+    }
+  }
+
+  function playTaskDoneSound() {
+    const audio = document.getElementById("taskDoneSound");
+    if (audio) {
+      audio.currentTime = 0;
+      audio.volume = 0.6; // adjust volume as needed
+      audio.play().catch((e) => console.log("Task done sound blocked"));
+    }
   }
 
   function checkWinCondition() {
@@ -854,6 +898,10 @@ const Game = (() => {
 
           nearest.timer = nearest.cooldown;
           Particles.spawnRipple(cx, cy, RIPPLE_COLORS[nearest.type] || "#fff");
+
+          if (pts > 0) {
+            playInteractionSound();
+          }
 
           state.score += pts;
           state.totalCleaned++;
