@@ -347,13 +347,22 @@ canvas#game {
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 4px;
     height: auto;
-    padding: 6px 12px;
+    padding: 4px 8px;
     background: rgba(0, 0, 0, 0.5);
     border-radius: 6px;
     white-space: nowrap;
     display: flex;
+  }
+  #stats img {
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 2px !important;
+    margin-left: 0 !important;
+  }
+  #stats #score-display {
+    font-size: 16px !important;
   }
 
   #pollution-bar-bg {
@@ -410,14 +419,17 @@ canvas#game {
   /* Move shop icon right side of the screen on mobile above the interact btn */
   #shop-icon {
     bottom: auto !important;
-    top: 70px !important;
-    right: 15px !important;
+    top: 60px !important;
+    right: 10px !important;
     left: auto !important;
-    width: 72px !important;
-    height: 72px !important;
+    width: auto !important;
+    height: auto !important;
   }
-  #shop-icon img {
-    width: 54px !important;
-    height: 54px !important;
+  #shop-icon img[alt="SHOP"] {
+    width: 50px !important;
+    margin-bottom: -35px !important;
+  }
+  #shop-icon img[alt="Shop"] {
+    width: 55px !important;
   }
 }
