@@ -49,43 +49,15 @@ body {
   left: 20px;
   transform: scale(0);
   
-  /* Cloud shape base */
-  background: #ffffff;
-  border-radius: 100px;
-  padding: 40px 60px;
-  text-align: center;
-  color: #166534;
   z-index: 2500;
   pointer-events: none;
   opacity: 0;
-  filter: drop-shadow(0 15px 20px rgba(0, 0, 0, 0.4));
   box-sizing: border-box;
-  max-width: 90vw;
+  width: 90vw;
+  max-width: 600px;
 }
 
-#objective-toast::before {
-  content: "";
-  position: absolute;
-  top: -40px;
-  left: 40px;
-  width: 100px;
-  height: 100px;
-  background: #ffffff;
-  border-radius: 50%;
-  z-index: -1;
-}
 
-#objective-toast::after {
-  content: "";
-  position: absolute;
-  top: -50px;
-  right: 50px;
-  width: 130px;
-  height: 130px;
-  background: #ffffff;
-  border-radius: 50%;
-  z-index: -1;
-}
 
 #objective-toast.toast-center {
   top: 50%;

@@ -304,6 +304,11 @@ const Game = (() => {
             canPlace = true; // allow placing anything after win
           }
 
+          if (canPlace && state.score < activeItem.cost) {
+            canPlace = false;
+            warningMsg = `Need ${activeItem.cost} Coins!`;
+          }
+
           if (canPlace && activeItem.type === "mud_house") {
             // Find if there's a placeholder it snaps to
             let targetRect = {
@@ -353,16 +358,18 @@ const Game = (() => {
             };
 
             if (activeItem.type === "tree") {
+              const treeTypeIdx = activeItem.treeType !== undefined ? activeItem.treeType : Math.floor(Math.random() * 3);
               Objects.trees.push({
                 x: wx - 30,
                 y: wy + 10,
                 w: 60,
                 h: 80,
-                type: Math.floor(Math.random() * 3),
+                type: treeTypeIdx,
                 isPlanted: true,
               });
               state.tasks.treesPlanted++;
-              Particles.spawnFloat(wx, wy, "Tree Planted!", "#4ade80");
+              state.score -= activeItem.cost;
+              Particles.spawnFloat(wx, wy, `Tree Planted! -${activeItem.cost} Coins`, "#4ade80");
             } else {
               Objects.interactables.push({
                 ...placedItem,
@@ -371,7 +378,8 @@ const Game = (() => {
               });
               if (activeItem.type === "mud_house") {
                 state.tasks.housesBuilt++;
-                Particles.spawnFloat(wx, wy, "Mud House Built!", "#4ade80");
+                state.score -= activeItem.cost;
+                Particles.spawnFloat(wx, wy, `House Built! -${activeItem.cost} Coins`, "#4ade80");
 
                 // Mark the nearest placeholder as filled so we don't snap to it anymore
                 for (let b of Objects.barriers) {
@@ -386,10 +394,11 @@ const Game = (() => {
                 }
               } else if (activeItem.type === "solar_panel") {
                 state.tasks.solarInstalled++;
+                state.score -= activeItem.cost;
                 Particles.spawnFloat(
                   wx,
                   wy,
-                  "Solar Panel Installed!",
+                  `Solar Panel Installed! -${activeItem.cost} Coins`,
                   "#4ade80",
                 );
               }
@@ -417,7 +426,7 @@ const Game = (() => {
       },
       {
         id: "task-trash",
-        label: "Throw Trash Bags From House Streets In Green Bin",
+        label: "collectg garbage bags from houes and throw in bin",
         key: "trashCollected",
         req: "trashRequired",
       },
@@ -429,13 +438,13 @@ const Game = (() => {
       },
       {
         id: "task-bottle",
-        label: "Pick Plastic Bottles From River and Put in Blue Bin",
+        label: "Pick Plastic Bottles From River and Put in red Bin",
         key: "bottlesCollected",
         req: "bottlesRequired",
       },
       {
         id: "task-oil",
-        label: "Clean Oil Spills In Village Paths",
+        label: "Clean Oil Spills near factories",
         key: "oilSpillsCleaned",
         req: "oilSpillsRequired",
       },
@@ -453,31 +462,32 @@ const Game = (() => {
       },
       {
         id: "task-plant",
-        label: "Buy Tree Seeds And Plant Them In Village",
+        label: "Buy Tree And Plant Them In Village",
         key: "treesPlanted",
         req: "treesRequired",
       },
       {
         id: "task-solar",
-        label: "Buy & Install Solar Panel Near Houses",
+        label: "Buy & Install Solar Panel on house from shop",
         key: "solarInstalled",
         req: "solarRequired",
       },
       {
         id: "task-house",
-        label: "Buy Eco-Friendly Mud House From Shop",
+        label: "Buy House From Shop and place it near homes",
         key: "housesBuilt",
         req: "housesRequired",
       },
       {
         id: "task-puc",
-        label: "Get PUC Verification For White Car At Gas Station",
+        label: "Get PUC done for blue car",
         key: "pucDone",
         req: "pucRequired",
       },
     ];
 
     let foundActive = false;
+    let taskIndex = 1;
 
     for (const t of taskSequence) {
       const el = document.getElementById(t.id);
@@ -501,12 +511,13 @@ const Game = (() => {
             playTaskDoneSound();
           }
           lastActiveTaskLabel = t.label;
-          showTaskToast(t.label);
+          showTaskToast(taskIndex);
         }
       } else {
         // This task is yet to be unlocked
         el.style.display = "none";
       }
+      taskIndex++;
     }
 
     const allDoneEl = document.getElementById("task-all-done");
@@ -521,13 +532,16 @@ const Game = (() => {
     checkWinCondition();
   }
 
-  function showTaskToast(taskName) {
-    const toast = document.getElementById("objective-toast");
-    const textEl = document.getElementById("objective-toast-text");
-    const overlay = document.getElementById("objective-overlay");
-    if (!toast || !textEl) return;
+  function showTaskToast(taskIndex) {
+    if (taskIndex > 10) return; // Images only available up to task 10
 
-    textEl.textContent = taskName;
+    const toast = document.getElementById("objective-toast");
+    const imgEl = document.getElementById("objective-toast-img");
+    const overlay = document.getElementById("objective-overlay");
+    if (!toast || !imgEl) return;
+
+    imgEl.src = `assets/next_task_screen/task ${taskIndex}.png`;
+    imgEl.style.display = "block";
 
     // Reset classes sequentially to guarantee CSS transition re-trigger on mobile
     toast.className = "";
@@ -818,16 +832,13 @@ const Game = (() => {
                 nearest.actionState = "going";
                 nearest.startX = nearest.x;
                 nearest.targetX = streetBin.x - nearest.w + 40; // stop right at it
-                state.tasks.truckCalled++;
-                pts = 5;
+                pts = 0;
                 Particles.spawnFloat(
                   cx,
                   cy - 20,
                   "Truck Dispatched!",
                   "#4ade80"
                 );
-                Particles.spawnCoin(cx, cy - 60, pts);
-                updateTaskUI();
               } else {
                 pts = 0;
                 Particles.spawnFloat(
@@ -935,14 +946,19 @@ const Game = (() => {
             }
           } else if (nearest.type === "petrol_pump") {
             if (state.pucState === 2) {
-              state.pucState = 3;
-              state.tasks.pucDone++;
-              nearest.timer = 999999;
-              nearest.interactLabel = "";
-              pts = 10;
-              Particles.spawnFloat(cx, cy - 20, "PUC Done!", "#4ade80");
-              Particles.spawnCoin(cx, cy - 60, pts);
-              updateTaskUI();
+              if (state.score >= 5) {
+                state.score -= 5;
+                state.pucState = 3;
+                state.tasks.pucDone++;
+                nearest.timer = 999999;
+                nearest.interactLabel = "";
+                pts = 0;
+                Particles.spawnFloat(cx, cy - 20, "PUC Done! -5 Coins", "#4ade80");
+                updateTaskUI();
+              } else {
+                pts = 0;
+                Particles.spawnFloat(cx, cy - 20, "Need 5 Coins!", "#ef4444");
+              }
             } else {
               pts = 0;
             }
@@ -985,6 +1001,17 @@ const Game = (() => {
               (o) => o.type === "trashcan_street",
             );
             if (streetBin) streetBin.trashCount = 0; // Empty the trash
+
+            if (state.tasks.truckCalled < state.tasks.truckRequired) {
+              state.tasks.truckCalled++;
+              state.score += 5;
+              state.totalCleaned++;
+              playInteractionSound();
+              Particles.spawnFloat(obj.x + obj.w / 2, obj.y - 40, "Trash Collected!", "#4ade80");
+              Particles.spawnCoin(obj.x + obj.w / 2, obj.y - 80, 5);
+              updateTaskUI();
+            }
+
             obj.actionState = "leaving";
           }
         } else if (obj.actionState === "leaving") {
@@ -1009,24 +1036,21 @@ const Game = (() => {
       const gCar = Objects.barriers.find((b) => b.type === "car");
       if (gCar) {
         if (state.pucState === 0) {
-          const activeItem =
-            typeof Shop !== "undefined" ? Shop.getActiveItem() : null;
-          if (Input.mouseClicked && !activeItem) {
-            let wx = Input.mousePos.x / Camera.zoom + Camera.x;
-            let wy = Input.mousePos.y / Camera.zoom + Camera.y;
-            if (
-              wx >= gCar.x &&
-              wx <= gCar.x + gCar.w &&
-              wy >= gCar.y &&
-              wy <= gCar.y + gCar.h
-            ) {
+          const d = Utils.centreDist(Player.state, gCar);
+          if (d < 150) {
+            const hintEl = document.getElementById("interaction-hint");
+            hintEl.classList.add("visible");
+            hintEl.innerHTML = CONFIG.IS_TOUCH ? `Tap <strong>E</strong> to drive car` : `Press <strong>E</strong> to drive car`;
+            
+            if (Input.interact) {
               state.pucState = 1;
-              Input.consumeClick();
+              Input.consumeInteract();
+              playInteractionSound();
               Particles.spawnFloat(
                 gCar.x + gCar.w / 2,
                 gCar.y,
                 "Driving to Gas Station...",
-                "#4ade80",
+                "#4ade80"
               );
             }
           }
