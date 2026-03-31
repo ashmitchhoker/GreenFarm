@@ -800,12 +800,14 @@ const Game = (() => {
             state.inventory.trash++;
             nearest.active = false; // "Remove" the trash
             pts = 1;
-            Particles.spawnFloat(cx, cy - 20, "Trash picked up! +1", "#facc15", true);
+            Particles.spawnFloat(cx, cy - 20, "Trash picked up!", "#4ade80");
+            Particles.spawnCoin(cx, cy - 60, pts);
           } else if (nearest.type.startsWith("plastic_bottle")) {
             state.inventory.bottles++;
             nearest.active = false; // "Remove" the bottle
             pts = 1;
-            Particles.spawnFloat(cx, cy - 20, "Bottle picked up! +1", "#facc15", true);
+            Particles.spawnFloat(cx, cy - 20, "Bottle picked up!", "#4ade80");
+            Particles.spawnCoin(cx, cy - 60, pts);
           } else if (nearest.type === "garbage_truck") {
             const streetBin = Objects.interactables.find(
               (o) => o.type === "trashcan_street",
@@ -821,10 +823,10 @@ const Game = (() => {
                 Particles.spawnFloat(
                   cx,
                   cy - 20,
-                  "Truck Dispatched! +5",
-                  "#facc15",
-                  true
+                  "Truck Dispatched!",
+                  "#4ade80"
                 );
+                Particles.spawnCoin(cx, cy - 60, pts);
                 updateTaskUI();
               } else {
                 pts = 0;
@@ -847,10 +849,10 @@ const Game = (() => {
             Particles.spawnFloat(
               cx,
               cy - 20,
-              "+" + pts + " Coins!",
-              "#facc15",
-              true
+              "Trash Deposited!",
+              "#4ade80"
             );
+            Particles.spawnCoin(cx, cy - 60, pts);
             updateTaskUI();
           } else if (nearest.type === "trashcan_plastic") {
             const thrown = state.inventory.bottles;
@@ -861,10 +863,10 @@ const Game = (() => {
             Particles.spawnFloat(
               cx,
               cy - 20,
-              "+" + pts + " Coins!",
-              "#facc15",
-              true
+              "Bottles Deposited!",
+              "#4ade80"
             );
+            Particles.spawnCoin(cx, cy - 60, pts);
             updateTaskUI();
           } else if (nearest.type === "windmill") {
             if (!nearest.isOn) {
@@ -877,10 +879,10 @@ const Game = (() => {
               Particles.spawnFloat(
                 cx,
                 cy - 20,
-                "Windmill Active! +2",
-                "#facc15",
-                true
+                "Windmill Active!",
+                "#4ade80"
               );
+              Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             }
           } else if (nearest.type === "factory") {
@@ -893,10 +895,10 @@ const Game = (() => {
               Particles.spawnFloat(
                 cx,
                 cy - 20,
-                "Factory Serviced! +5",
-                "#facc15",
-                true
+                "Factory Serviced!",
+                "#4ade80"
               );
+              Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             }
           } else if (nearest.type === "oil_spill") {
@@ -909,10 +911,10 @@ const Game = (() => {
               Particles.spawnFloat(
                 cx,
                 cy - 20,
-                "Spill Cleaned! +3",
-                "#facc15",
-                true
+                "Spill Cleaned!",
+                "#4ade80"
               );
+              Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             }
           } else if (nearest.type === "street_light") {
@@ -925,10 +927,10 @@ const Game = (() => {
               Particles.spawnFloat(
                 cx,
                 cy - 20,
-                "Light turned off! +1",
-                "#facc15",
-                true
+                "Light turned off!",
+                "#4ade80"
               );
+              Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             }
           } else if (nearest.type === "petrol_pump") {
@@ -938,13 +940,14 @@ const Game = (() => {
               nearest.timer = 999999;
               nearest.interactLabel = "";
               pts = 10;
-              Particles.spawnFloat(cx, cy - 20, "PUC Done! +10", "#facc15", true);
+              Particles.spawnFloat(cx, cy - 20, "PUC Done!", "#4ade80");
+              Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             } else {
               pts = 0;
             }
           } else {
-            Particles.spawnFloat(cx, cy - 20, "+" + pts + " Coins", "#facc15", true);
+            Particles.spawnCoin(cx, cy - 60, pts);
           }
 
           nearest.timer = nearest.cooldown;

@@ -27,6 +27,10 @@ const Particles = (() => {
     floats.push({ x, y, text, color, life: 1.5, vy: -50, isCoin });
   }
 
+  function spawnCoin(x, y, pts) {
+    floats.push({ x, y, text: "+" + pts, color: "#facc15", life: 2.0, vy: -20, isCenteredCoin: true });
+  }
+
   function update(dt) {
     for (let i = smoke.length - 1; i >= 0; i--) {
       const p = smoke[i];
@@ -51,6 +55,6 @@ const Particles = (() => {
     get smoke()   { return smoke; },
     get ripples() { return ripples; },
     get floats()  { return floats; },
-    spawnSmoke, spawnRipple, spawnFloat, update, reset,
+    spawnSmoke, spawnRipple, spawnFloat, spawnCoin, update, reset,
   };
 })();

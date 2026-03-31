@@ -1088,7 +1088,31 @@ const Renderer = (() => {
       ctx.globalAlpha = Math.max(0, f.life / 1.5);
       ctx.fillStyle = f.color;
       
-      if (f.isCoin && coinFrames.length > 0) {
+      if (f.isCenteredCoin && coinFrames.length > 0) {
+        ctx.font = "bold 40px sans-serif";
+        const now = Date.now();
+        const frameIdx = Math.floor(now / 100) % coinFrames.length;
+        const cImg = coinFrames[frameIdx];
+
+        if (cImg && cImg.complete) {
+          ctx.textAlign = "center";
+          const bob = Math.sin(now / 120) * 10;
+          ctx.drawImage(cImg, f.x - 45, f.y - 80 + bob, 90, 90);
+          
+          ctx.shadowColor = "rgba(0,0,0,0.9)";
+          ctx.shadowOffsetX = 3;
+          ctx.shadowOffsetY = 3;
+          ctx.fillText(f.text, f.x, f.y + 25 + bob);
+          ctx.shadowColor = "transparent";
+        } else {
+          ctx.textAlign = "center";
+          ctx.shadowColor = "rgba(0,0,0,0.8)";
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+          ctx.fillText(f.text, f.x, f.y);
+          ctx.shadowColor = "transparent";
+        }
+      } else if (f.isCoin && coinFrames.length > 0) {
         ctx.font = "bold 36px sans-serif";
         const now = Date.now();
         const frameIdx = Math.floor(now / 100) % coinFrames.length;
