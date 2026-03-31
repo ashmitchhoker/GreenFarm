@@ -25,29 +25,72 @@ body {
   user-select: none;
 }
 
+/* ── OBJECTIVE OVERLAY ─────────────────────────────────── */
+#objective-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2400;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+#objective-overlay.active {
+  opacity: 1;
+}
+
 /* ── OBJECTIVE TOAST ───────────────────────────────────── */
 #objective-toast {
   position: fixed;
   top: 60px;
   left: 20px;
   transform: scale(0);
-  background: rgba(0, 0, 0, 0.9);
-  border: 3px solid #4ade80;
-  border-radius: 16px;
-  padding: 20px 40px;
+  
+  /* Cloud shape base */
+  background: #ffffff;
+  border-radius: 100px;
+  padding: 40px 60px;
   text-align: center;
-  color: white;
+  color: #166534;
   z-index: 2500;
   pointer-events: none;
   opacity: 0;
-  box-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+  filter: drop-shadow(0 15px 20px rgba(0, 0, 0, 0.4));
   box-sizing: border-box;
+  max-width: 90vw;
+}
+
+#objective-toast::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  left: 40px;
+  width: 100px;
+  height: 100px;
+  background: #ffffff;
+  border-radius: 50%;
+  z-index: -1;
+}
+
+#objective-toast::after {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: 50px;
+  width: 130px;
+  height: 130px;
+  background: #ffffff;
+  border-radius: 50%;
+  z-index: -1;
 }
 
 #objective-toast.toast-center {
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate(-50%, -50%) scale(1.1);
   opacity: 1;
   transition:
     opacity 0.4s ease,

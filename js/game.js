@@ -524,12 +524,16 @@ const Game = (() => {
   function showTaskToast(taskName) {
     const toast = document.getElementById("objective-toast");
     const textEl = document.getElementById("objective-toast-text");
+    const overlay = document.getElementById("objective-overlay");
     if (!toast || !textEl) return;
 
     textEl.textContent = taskName;
 
     // Reset classes sequentially to guarantee CSS transition re-trigger on mobile
     toast.className = "";
+    toast.dataset.waitingForMove = "false";
+    if (overlay) overlay.classList.add("active");
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         toast.className = "toast-center";
@@ -538,9 +542,8 @@ const Game = (() => {
 
     if (toast.toastTimer) clearTimeout(toast.toastTimer);
     toast.toastTimer = setTimeout(() => {
-      if (toast.className === "toast-center") {
-        toast.className = "toast-corner";
-      }
+      // After 3 seconds, wait for the player to move before dismissing
+      toast.dataset.waitingForMove = "true";
     }, 3000);
   }
 
@@ -621,6 +624,19 @@ const Game = (() => {
         }
       }
       return;
+    }
+
+    // Dismiss objective toast if waiting for move and player is moving
+    const toast = document.getElementById("objective-toast");
+    if (toast && toast.dataset.waitingForMove === "true") {
+      if (Input.dir.x !== 0 || Input.dir.y !== 0) {
+        toast.dataset.waitingForMove = "false";
+        if (toast.className === "toast-center") {
+          toast.className = "toast-corner";
+          const overlay = document.getElementById("objective-overlay");
+          if (overlay) overlay.classList.remove("active");
+        }
+      }
     }
 
     // Update animal positions
