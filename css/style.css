@@ -155,12 +155,12 @@ body {
   position: fixed;
   top: 0;
   right: 12px;
-  height: 40px;
+  height: 64px;
   display: flex;
   align-items: center;
   gap: 14px;
   z-index: 11;
-  font-size: 12px;
+  font-size: 14px;
 }
 #stats span {
   opacity: 0.85;

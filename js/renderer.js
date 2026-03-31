@@ -1089,7 +1089,7 @@ const Renderer = (() => {
       ctx.fillStyle = f.color;
       
       if (f.isCoin && coinFrames.length > 0) {
-        ctx.font = "bold 28px sans-serif";
+        ctx.font = "bold 36px sans-serif";
         const now = Date.now();
         const frameIdx = Math.floor(now / 100) % coinFrames.length;
         const cImg = coinFrames[frameIdx];
@@ -1097,14 +1097,14 @@ const Renderer = (() => {
         if (cImg && cImg.complete) {
           ctx.textAlign = "left";
           const textWidth = ctx.measureText(f.text).width;
-          const totalW = 48 + 10 + textWidth;
+          const totalW = 80 + 15 + textWidth;
           const startX = f.x - totalW / 2;
-          ctx.drawImage(cImg, startX, f.y - 36, 48, 48);
+          ctx.drawImage(cImg, startX, f.y - 60, 80, 80);
           // Dark drop-shadow for contrast
           ctx.shadowColor = "rgba(0,0,0,0.8)";
-          ctx.shadowOffsetX = 2;
-          ctx.shadowOffsetY = 2;
-          ctx.fillText(f.text, startX + 58, f.y);
+          ctx.shadowOffsetX = 3;
+          ctx.shadowOffsetY = 3;
+          ctx.fillText(f.text, startX + 95, f.y);
           ctx.shadowColor = "transparent";
         } else {
           ctx.textAlign = "center";
