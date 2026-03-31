@@ -98,10 +98,10 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "oil_spill",
-    x: 2550,
-    y: 650,
-    w: 90,
-    h: 40,
+    x: 2150,
+    y: 550, // Grass area comfortably below the factories (end at y=500) and above windmills
+    w: 180, // Scaled larger
+    h: 80,  // Scaled larger
     pollRate: 0.2,
     interactEffect: -7,
     cooldown: 3.0,
@@ -110,8 +110,8 @@ const INTERACTABLE_DEFS = [
   },
   {
     type: "oil_spill",
-    x: 2850,
-    y: 500,
+    x: 2650,
+    y: 550, // Grass area behind another factory
     w: 120,
     h: 50,
     pollRate: 0.18,

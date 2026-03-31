@@ -600,7 +600,7 @@ const Game = (() => {
       overlayTitle.textContent = "🏅 Environment Samaritan";
       overlayTitle.style.color = "#4ade80";
       overlayMsg.textContent =
-        "All tasks completed! You cleaned the city and built a green future. Score: " +
+        "All tasks completed! You cleaned the city and built a green future. Coins: " +
         state.score;
       if (keepPlayingBtn) keepPlayingBtn.style.display = "block";
       overlay.classList.add("active");
@@ -799,13 +799,13 @@ const Game = (() => {
           if (nearest.type === "trashbag") {
             state.inventory.trash++;
             nearest.active = false; // "Remove" the trash
-            pts = 10;
-            Particles.spawnFloat(cx, cy - 20, "Trash picked up!", "#4ade80");
+            pts = 1;
+            Particles.spawnFloat(cx, cy - 20, "Trash picked up! +1", "#facc15", true);
           } else if (nearest.type.startsWith("plastic_bottle")) {
             state.inventory.bottles++;
             nearest.active = false; // "Remove" the bottle
-            pts = 10;
-            Particles.spawnFloat(cx, cy - 20, "Bottle picked up!", "#4ade80");
+            pts = 1;
+            Particles.spawnFloat(cx, cy - 20, "Bottle picked up! +1", "#facc15", true);
           } else if (nearest.type === "garbage_truck") {
             const streetBin = Objects.interactables.find(
               (o) => o.type === "trashcan_street",
@@ -817,12 +817,13 @@ const Game = (() => {
                 nearest.startX = nearest.x;
                 nearest.targetX = streetBin.x - nearest.w + 40; // stop right at it
                 state.tasks.truckCalled++;
-                pts = 50;
+                pts = 5;
                 Particles.spawnFloat(
                   cx,
                   cy - 20,
-                  "Truck Dispatched! +50",
-                  "#4ade80",
+                  "Truck Dispatched! +5",
+                  "#facc15",
+                  true
                 );
                 updateTaskUI();
               } else {
@@ -842,12 +843,13 @@ const Game = (() => {
             nearest.trashCount = (nearest.trashCount || 0) + thrown;
             state.tasks.trashCollected += thrown;
             state.inventory.trash = 0;
-            pts = thrown * 20; // 20 points per trash thrown in bin
+            pts = thrown * 2; // 2 coins per trash thrown in bin
             Particles.spawnFloat(
               cx,
               cy - 20,
-              "+" + pts + " Points!",
-              "#4ade80",
+              "+" + pts + " Coins!",
+              "#facc15",
+              true
             );
             updateTaskUI();
           } else if (nearest.type === "trashcan_plastic") {
@@ -855,12 +857,13 @@ const Game = (() => {
             nearest.trashCount = (nearest.trashCount || 0) + thrown; // Generic visual bin count if used
             state.tasks.bottlesCollected += thrown;
             state.inventory.bottles = 0;
-            pts = thrown * 20;
+            pts = thrown * 2;
             Particles.spawnFloat(
               cx,
               cy - 20,
-              "+" + pts + " Points!",
-              "#4ade80",
+              "+" + pts + " Coins!",
+              "#facc15",
+              true
             );
             updateTaskUI();
           } else if (nearest.type === "windmill") {
@@ -869,13 +872,14 @@ const Game = (() => {
               nearest.timer = nearest.cooldown || 999999;
               nearest.interactLabel = ""; // Disable further interactions
               state.tasks.windmillsStarted++;
-              pts = 15;
+              pts = 2;
 
               Particles.spawnFloat(
                 cx,
                 cy - 20,
-                "Windmill Active! +15",
-                "#4ade80",
+                "Windmill Active! +2",
+                "#facc15",
+                true
               );
               updateTaskUI();
             }
@@ -885,12 +889,13 @@ const Game = (() => {
               nearest.timer = 999999;
               nearest.interactLabel = ""; // Disabled further interactions
               state.tasks.factoriesServiced++;
-              pts = 50;
+              pts = 5;
               Particles.spawnFloat(
                 cx,
                 cy - 20,
-                "Factory Serviced! +50",
-                "#4ade80",
+                "Factory Serviced! +5",
+                "#facc15",
+                true
               );
               updateTaskUI();
             }
@@ -900,12 +905,13 @@ const Game = (() => {
               nearest.timer = 999999;
               nearest.interactLabel = "";
               state.tasks.oilSpillsCleaned++;
-              pts = 30;
+              pts = 3;
               Particles.spawnFloat(
                 cx,
                 cy - 20,
-                "Spill Cleaned! +30",
-                "#4ade80",
+                "Spill Cleaned! +3",
+                "#facc15",
+                true
               );
               updateTaskUI();
             }
@@ -915,12 +921,13 @@ const Game = (() => {
               nearest.timer = 999999;
               nearest.interactLabel = ""; // Disabled further interactions
               state.tasks.lightsTurnedOff++;
-              pts = 10;
+              pts = 1;
               Particles.spawnFloat(
                 cx,
                 cy - 20,
-                "Light turned off! +10",
-                "#4ade80",
+                "Light turned off! +1",
+                "#facc15",
+                true
               );
               updateTaskUI();
             }
@@ -930,14 +937,14 @@ const Game = (() => {
               state.tasks.pucDone++;
               nearest.timer = 999999;
               nearest.interactLabel = "";
-              pts = 100;
-              Particles.spawnFloat(cx, cy - 20, "PUC Done! +100", "#4ade80");
+              pts = 10;
+              Particles.spawnFloat(cx, cy - 20, "PUC Done! +10", "#facc15", true);
               updateTaskUI();
             } else {
               pts = 0;
             }
           } else {
-            Particles.spawnFloat(cx, cy - 20, "+" + pts, "#4ade80");
+            Particles.spawnFloat(cx, cy - 20, "+" + pts + " Coins", "#facc15", true);
           }
 
           nearest.timer = nearest.cooldown;
@@ -1078,7 +1085,7 @@ const Game = (() => {
       overlayTitle.textContent = "💀 Game Over";
       overlayTitle.style.color = "#f87171";
       overlayMsg.textContent =
-        "Pollution overwhelmed the farm! Score: " + state.score;
+        "Pollution overwhelmed the farm! Coins: " + state.score;
       overlay.classList.add("active");
     }
   }

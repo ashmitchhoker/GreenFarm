@@ -23,8 +23,8 @@ const Particles = (() => {
     ripples.push({ x, y, r: 14, alpha: .7, color });
   }
 
-  function spawnFloat(x, y, text, color) {
-    floats.push({ x, y, text, color, life: 1.5, vy: -50 });
+  function spawnFloat(x, y, text, color, isCoin=false) {
+    floats.push({ x, y, text, color, life: 1.5, vy: -50, isCoin });
   }
 
   function update(dt) {

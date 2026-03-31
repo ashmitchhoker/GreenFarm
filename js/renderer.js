@@ -32,6 +32,9 @@ const Renderer = (() => {
   let garbageTruckImg = new Image();
   let streetLightOnImg = new Image();
   let streetLightOffImg = new Image();
+  let oilSpillCanImg = new Image();
+  let oilSpillPoolImg = new Image();
+  let coinImg = new Image();
 
   let animalFrames = {
     dog: [],
@@ -197,6 +200,9 @@ const Renderer = (() => {
     streetLightOffImg.src = "assets/street_light/streetlight_off.png";
     windmillBaseImg.src = "assets/windmill/windmill_nofan.png";
     windmillFanImg.src = "assets/windmill/fan.png";
+    oilSpillCanImg.src = "assets/oilspill/oil can.png";
+    oilSpillPoolImg.src = "assets/oilspill/spill.png";
+    coinImg.src = "assets/coins/coin 1.png";
 
     // Load road patterns
     roadImgs.horiz.src = "assets/road/road_horizontal.png";
@@ -784,15 +790,21 @@ const Renderer = (() => {
 
       case "oil_spill":
         if (!obj.active) break; // Don't draw if cleaned up
-        ctx.fillStyle = `rgba(28,25,23,${0.7 + Math.sin(now / 800) * 0.1})`;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, obj.w / 2 + 10, obj.h / 2 + 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = `rgba(168,85,247,${0.2 + Math.sin(now / 400) * 0.1})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(cx - 5, cy - 3, obj.w / 3, obj.h / 3, 0.3, 0, Math.PI * 2);
-        ctx.stroke();
+        if (oilSpillPoolImg.complete) {
+          const pw = obj.w * 2;
+          const ph = obj.h * 2;
+          ctx.drawImage(oilSpillPoolImg, cx - pw / 2, cy - ph / 2, pw, ph);
+        } else {
+          ctx.fillStyle = `rgba(28,25,23,${0.7 + Math.sin(now / 800) * 0.1})`;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, obj.w / 2 + 10, obj.h / 2 + 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = `rgba(168,85,247,${0.2 + Math.sin(now / 400) * 0.1})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.ellipse(cx - 5, cy - 3, obj.w / 3, obj.h / 3, 0.3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
         break;
 
       case "burning_waste":
@@ -1072,8 +1084,18 @@ const Renderer = (() => {
       ctx.globalAlpha = Math.max(0, f.life / 1.5);
       ctx.fillStyle = f.color;
       ctx.font = "bold 18px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(f.text, f.x, f.y);
+      
+      if (f.isCoin && coinImg && coinImg.complete) {
+        ctx.textAlign = "left";
+        const textWidth = ctx.measureText(f.text).width;
+        const totalW = 24 + 5 + textWidth;
+        const startX = f.x - totalW / 2;
+        ctx.drawImage(coinImg, startX, f.y - 18, 24, 24);
+        ctx.fillText(f.text, startX + 29, f.y);
+      } else {
+        ctx.textAlign = "center";
+        ctx.fillText(f.text, f.x, f.y);
+      }
     }
     ctx.globalAlpha = 1;
   }
@@ -1123,8 +1145,8 @@ const Renderer = (() => {
     const ac = document.getElementById("actions-display");
     const inventory = document.getElementById("inventory");
 
-    if (sc) sc.textContent = "⭐ Score: " + gs.score;
-    if (ac) ac.textContent = "✅ Cleaned: " + gs.totalCleaned;
+    if (sc) sc.textContent = gs.score;
+    if (ac) ac.textContent = "";
 
     if (inventory && gs.inventory) {
       let invText = [];
