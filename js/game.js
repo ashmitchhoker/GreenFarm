@@ -10,6 +10,7 @@ const Game = (() => {
     pollution: CONFIG.INITIAL_POLLUTION,
     gameOver: false,
     gameWon: false,
+    isPaused: false,
     score: 0,
     totalCleaned: 0,
     inventory: {
@@ -151,6 +152,12 @@ const Game = (() => {
   function loop(time) {
     const dt = Math.min((time - lastTime) / 1000, 0.05);
     lastTime = time;
+
+    // Skip all logic if paused, but retain the requestAnimationFrame schedule
+    if (state.isPaused) {
+      requestAnimationFrame(loop);
+      return;
+    }
 
     if (!state.gameOver) {
       Input.pollKeyboard();
@@ -986,5 +993,28 @@ const Game = (() => {
     document.getElementById("overlay").classList.remove("active");
   }
 
-  return { init, restart, continuePlaying };
+  function togglePause() {
+    if (state.gameOver) return; // Don't pause if dead
+    state.isPaused = !state.isPaused;
+
+    const pauseMenu = document.getElementById("pause-menu");
+    if (pauseMenu) {
+      if (state.isPaused) {
+        pauseMenu.style.display = "flex";
+      } else {
+        pauseMenu.style.display = "none";
+        // reset lastTime so delta time doesn't spike when unpausing
+        lastTime = performance.now();
+      }
+    }
+  }
+
+  // Handle escape key
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      togglePause();
+    }
+  });
+
+  return { init, restart, continuePlaying, togglePause };
 })();
