@@ -518,12 +518,12 @@ const Game = (() => {
     void toast.offsetWidth; // Trigger reflow to restart CSS transitions
     toast.className = "toast-center"; // Drop into center
 
-    // After 3 seconds, fly to the top-left (where the task container is)
+    // After 2 seconds, fly to the top-left (where the task container is)
     setTimeout(() => {
       if (toast.className === "toast-center") {
         toast.className = "toast-corner";
       }
-    }, 4000);
+    }, 3000);
   }
 
   function playInteractionSound() {
