@@ -123,28 +123,37 @@ const Game = (() => {
     const bgMusic = document.getElementById("bgMusic");
     if (bgMusic) {
       bgMusic.volume = 0.3;
-      bgMusic.play().catch((e) => {
-        // If autoplay is blocked by the browser, wait for the first click/touch
-        const startAudio = () => {
-          bgMusic.play().catch((err) => console.log("Audio still blocked"));
-          
-          // Unlock other interaction sounds
-          ['interactionSound', 'taskDoneSound'].forEach(id => {
-             const a = document.getElementById(id);
-             if (a) {
-                a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(()=>{});
-             }
-          });
+      const playPromise = bgMusic.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((e) => {
+          // If autoplay is blocked by the browser, wait for the first click/touch
+          const startAudio = () => {
+            const p = bgMusic.play();
+            if (p !== undefined) p.catch(() => console.log("Audio still blocked"));
+            
+            // Unlock other interaction sounds
+            ['interactionSound', 'taskDoneSound'].forEach(id => {
+               const a = document.getElementById(id);
+               if (a) {
+                  const ap = a.play();
+                  if (ap !== undefined) {
+                    ap.then(() => {
+                      a.pause();
+                      if (a.readyState > 0) try { a.currentTime = 0; } catch(err){}
+                    }).catch(()=>{});
+                  }
+               }
+            });
 
-          window.removeEventListener("pointerdown", startAudio, true);
-          window.removeEventListener("keydown", startAudio, true);
-          window.removeEventListener("touchstart", startAudio, true);
-        };
-        // Use capture: true so we get the event even if a UI button stops propagation
-        window.addEventListener("pointerdown", startAudio, true);
-        window.addEventListener("keydown", startAudio, true);
-        window.addEventListener("touchstart", startAudio, true);
-      });
+            window.removeEventListener("pointerdown", startAudio, true);
+            window.removeEventListener("keydown", startAudio, true);
+            window.removeEventListener("touchstart", startAudio, true);
+          };
+          window.addEventListener("pointerdown", startAudio, true);
+          window.addEventListener("keydown", startAudio, true);
+          window.addEventListener("touchstart", startAudio, true);
+        });
+      }
     }
 
     // Input setup
@@ -529,18 +538,24 @@ const Game = (() => {
   function playInteractionSound() {
     const audio = document.getElementById("interactionSound");
     if (audio) {
-      audio.currentTime = 0;
+      if (audio.readyState > 0) {
+        try { audio.currentTime = 0; } catch(e) {}
+      }
       audio.volume = 0.5; // adjust volume as needed
-      audio.play().catch((e) => console.log("Interaction sound blocked"));
+      const p = audio.play();
+      if (p !== undefined) p.catch(() => console.log("Interaction sound blocked"));
     }
   }
 
   function playTaskDoneSound() {
     const audio = document.getElementById("taskDoneSound");
     if (audio) {
-      audio.currentTime = 0;
+      if (audio.readyState > 0) {
+        try { audio.currentTime = 0; } catch(e) {}
+      }
       audio.volume = 0.6; // adjust volume as needed
-      audio.play().catch((e) => console.log("Task done sound blocked"));
+      const p = audio.play();
+      if (p !== undefined) p.catch(() => console.log("Task done sound blocked"));
     }
   }
 
