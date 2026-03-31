@@ -111,6 +111,25 @@ const Game = (() => {
       setTimeout(() => el.remove(), 550);
     }
 
+    // Attempt to play background music at 30% volume
+    const bgMusic = document.getElementById("bgMusic");
+    if (bgMusic) {
+      bgMusic.volume = 0.3;
+      bgMusic.play().catch((e) => {
+        // If autoplay is blocked by the browser, wait for the first click/touch
+        const startAudio = () => {
+          bgMusic.play().catch((err) => console.log("Audio still blocked"));
+          window.removeEventListener("pointerdown", startAudio, true);
+          window.removeEventListener("keydown", startAudio, true);
+          window.removeEventListener("touchstart", startAudio, true);
+        };
+        // Use capture: true so we get the event even if a UI button stops propagation
+        window.addEventListener("pointerdown", startAudio, true);
+        window.addEventListener("keydown", startAudio, true);
+        window.addEventListener("touchstart", startAudio, true);
+      });
+    }
+
     // Input setup
     if (CONFIG.IS_TOUCH) Input.initTouch();
     Input.initPinchZoom(canvas);

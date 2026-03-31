@@ -333,11 +333,11 @@ canvas#game {
     top: 70px !important;
     right: 15px !important;
     left: auto !important;
-    width: 58px !important;
-    height: 58px !important;
+    width: 72px !important;
+    height: 72px !important;
   }
   #shop-icon img {
-    width: 42px !important;
-    height: 42px !important;
+    width: 54px !important;
+    height: 54px !important;
   }
 }
