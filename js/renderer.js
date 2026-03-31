@@ -34,7 +34,7 @@ const Renderer = (() => {
   let streetLightOffImg = new Image();
   let oilSpillCanImg = new Image();
   let oilSpillPoolImg = new Image();
-  let coinImg = new Image();
+  let coinFrames = [];
 
   let animalFrames = {
     dog: [],
@@ -202,7 +202,11 @@ const Renderer = (() => {
     windmillFanImg.src = "assets/windmill/fan.png";
     oilSpillCanImg.src = "assets/oilspill/oil can.png";
     oilSpillPoolImg.src = "assets/oilspill/spill.png";
-    coinImg.src = "assets/coins/coin 1.png";
+    for(let i=1; i<=5; i++) {
+        let cImg = new Image();
+        cImg.src = `assets/coins/coin_${i}.png`;
+        coinFrames.push(cImg);
+    }
 
     // Load road patterns
     roadImgs.horiz.src = "assets/road/road_horizontal.png";
@@ -1083,18 +1087,41 @@ const Renderer = (() => {
     for (const f of Particles.floats) {
       ctx.globalAlpha = Math.max(0, f.life / 1.5);
       ctx.fillStyle = f.color;
-      ctx.font = "bold 18px sans-serif";
       
-      if (f.isCoin && coinImg && coinImg.complete) {
-        ctx.textAlign = "left";
-        const textWidth = ctx.measureText(f.text).width;
-        const totalW = 24 + 5 + textWidth;
-        const startX = f.x - totalW / 2;
-        ctx.drawImage(coinImg, startX, f.y - 18, 24, 24);
-        ctx.fillText(f.text, startX + 29, f.y);
+      if (f.isCoin && coinFrames.length > 0) {
+        ctx.font = "bold 28px sans-serif";
+        const now = Date.now();
+        const frameIdx = Math.floor(now / 100) % coinFrames.length;
+        const cImg = coinFrames[frameIdx];
+
+        if (cImg && cImg.complete) {
+          ctx.textAlign = "left";
+          const textWidth = ctx.measureText(f.text).width;
+          const totalW = 48 + 10 + textWidth;
+          const startX = f.x - totalW / 2;
+          ctx.drawImage(cImg, startX, f.y - 36, 48, 48);
+          // Dark drop-shadow for contrast
+          ctx.shadowColor = "rgba(0,0,0,0.8)";
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+          ctx.fillText(f.text, startX + 58, f.y);
+          ctx.shadowColor = "transparent";
+        } else {
+          ctx.textAlign = "center";
+          ctx.shadowColor = "rgba(0,0,0,0.8)";
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+          ctx.fillText(f.text, f.x, f.y);
+          ctx.shadowColor = "transparent";
+        }
       } else {
+        ctx.font = "bold 24px sans-serif";
         ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
         ctx.fillText(f.text, f.x, f.y);
+        ctx.shadowColor = "transparent";
       }
     }
     ctx.globalAlpha = 1;
