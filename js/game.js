@@ -84,7 +84,7 @@ const Game = (() => {
       document.getElementById("taskDoneSound"),
     ].filter(Boolean);
 
-    const totalAssets = trackImages.length + audioElements.length;
+    const totalAssets = trackImages.length; // Don't block loading on audio (prevents Safari hang)
     const updateProgress = () => {
       loadedCount++;
       const pct = Math.floor((loadedCount / totalAssets) * 100);
@@ -109,18 +109,6 @@ const Game = (() => {
           img.addEventListener("error", updateProgress); // count errors so it doesn't hang
         }
       });
-
-      audioElements.forEach((audio) => {
-        if (audio.readyState >= 3) {
-          // HAVE_FUTURE_DATA or higher
-          updateProgress();
-        } else {
-          audio.addEventListener("canplaythrough", updateProgress, {
-            once: true,
-          });
-          audio.addEventListener("error", updateProgress, { once: true });
-        }
-      });
     }
   }
 
@@ -139,6 +127,15 @@ const Game = (() => {
         // If autoplay is blocked by the browser, wait for the first click/touch
         const startAudio = () => {
           bgMusic.play().catch((err) => console.log("Audio still blocked"));
+          
+          // Unlock other interaction sounds
+          ['interactionSound', 'taskDoneSound'].forEach(id => {
+             const a = document.getElementById(id);
+             if (a) {
+                a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(()=>{});
+             }
+          });
+
           window.removeEventListener("pointerdown", startAudio, true);
           window.removeEventListener("keydown", startAudio, true);
           window.removeEventListener("touchstart", startAudio, true);
@@ -155,8 +152,11 @@ const Game = (() => {
     Input.initPinchZoom(canvas);
     Input.initWheelZoom(canvas);
 
-    // Start
-    updateTaskUI();
+    // Initial delay for UI so toast isn't hidden by preloader fade out
+    setTimeout(() => {
+        updateTaskUI();
+    }, 600);
+
     requestAnimationFrame(loop);
   }
 
