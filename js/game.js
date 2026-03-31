@@ -123,37 +123,43 @@ const Game = (() => {
     const bgMusic = document.getElementById("bgMusic");
     if (bgMusic) {
       bgMusic.volume = 0.3;
-      const playPromise = bgMusic.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((e) => {
-          // If autoplay is blocked by the browser, wait for the first click/touch
-          const startAudio = () => {
-            const p = bgMusic.play();
-            if (p !== undefined) p.catch(() => console.log("Audio still blocked"));
-            
-            // Unlock other interaction sounds
-            ['interactionSound', 'taskDoneSound'].forEach(id => {
-               const a = document.getElementById(id);
-               if (a) {
-                  const ap = a.play();
-                  if (ap !== undefined) {
-                    ap.then(() => {
-                      a.pause();
-                      if (a.readyState > 0) try { a.currentTime = 0; } catch(err){}
-                    }).catch(()=>{});
-                  }
-               }
-            });
+      try {
+        const playPromise = bgMusic.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            // Safari blocks autoplay. We must unlock on first interaction.
+          });
+        }
+      } catch (e) {}
 
-            window.removeEventListener("pointerdown", startAudio, true);
-            window.removeEventListener("keydown", startAudio, true);
-            window.removeEventListener("touchstart", startAudio, true);
-          };
-          window.addEventListener("pointerdown", startAudio, true);
-          window.addEventListener("keydown", startAudio, true);
-          window.addEventListener("touchstart", startAudio, true);
+      // Always setup the unlocker on first interaction
+      const startAudio = () => {
+        try {
+          const p = bgMusic.play();
+          if (p !== undefined) p.catch(() => {});
+        } catch (e) {}
+        
+        ['interactionSound', 'taskDoneSound'].forEach(id => {
+           const a = document.getElementById(id);
+           if (a) {
+              try {
+                const ap = a.play();
+                if (ap !== undefined) ap.catch(()=>{});
+                // Synchronously pause to unlock without playing the sound
+                a.pause();
+                if (a.readyState > 0) a.currentTime = 0;
+              } catch(e) {}
+           }
         });
-      }
+
+        window.removeEventListener("pointerdown", startAudio, true);
+        window.removeEventListener("keydown", startAudio, true);
+        window.removeEventListener("touchstart", startAudio, true);
+      };
+      // Important to use capture to intercept interaction before game logic
+      window.addEventListener("pointerdown", startAudio, true);
+      window.addEventListener("keydown", startAudio, true);
+      window.addEventListener("touchstart", startAudio, true);
     }
 
     // Input setup
@@ -522,13 +528,16 @@ const Game = (() => {
 
     textEl.textContent = taskName;
 
-    // Reset classes to play animation anew
-    toast.className = "toast-hidden";
-    void toast.offsetWidth; // Trigger reflow to restart CSS transitions
-    toast.className = "toast-center"; // Drop into center
+    // Reset classes sequentially to guarantee CSS transition re-trigger on mobile
+    toast.className = "";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        toast.className = "toast-center";
+      });
+    });
 
-    // After 2 seconds, fly to the top-left (where the task container is)
-    setTimeout(() => {
+    if (toast.toastTimer) clearTimeout(toast.toastTimer);
+    toast.toastTimer = setTimeout(() => {
       if (toast.className === "toast-center") {
         toast.className = "toast-corner";
       }
@@ -541,9 +550,11 @@ const Game = (() => {
       if (audio.readyState > 0) {
         try { audio.currentTime = 0; } catch(e) {}
       }
-      audio.volume = 0.5; // adjust volume as needed
-      const p = audio.play();
-      if (p !== undefined) p.catch(() => console.log("Interaction sound blocked"));
+      audio.volume = 0.5;
+      try {
+        const p = audio.play();
+        if (p !== undefined) p.catch(() => {});
+      } catch (e) {}
     }
   }
 
@@ -553,9 +564,11 @@ const Game = (() => {
       if (audio.readyState > 0) {
         try { audio.currentTime = 0; } catch(e) {}
       }
-      audio.volume = 0.6; // adjust volume as needed
-      const p = audio.play();
-      if (p !== undefined) p.catch(() => console.log("Task done sound blocked"));
+      audio.volume = 0.6;
+      try {
+        const p = audio.play();
+        if (p !== undefined) p.catch(() => {});
+      } catch (e) {}
     }
   }
 
