@@ -6,6 +6,9 @@ const Game = (() => {
   let canvas, ctx, miniCanvas, miniCtx;
   let VW, VH;
 
+  // Preloaded task screen images (indexed 1-11)
+  const taskImageCache = {};
+
   const state = {
     pollution: CONFIG.INITIAL_POLLUTION,
     gameOver: false,
@@ -60,6 +63,13 @@ const Game = (() => {
 
     resize();
     window.addEventListener("resize", resize);
+
+    // Preload all task screen images so transitions are instant
+    for (let i = 1; i <= 11; i++) {
+      const img = new Image();
+      img.src = `assets/next_task_screen/task ${i}.png`;
+      taskImageCache[i] = img;
+    }
 
     Objects.generateTrees();
 
@@ -550,25 +560,47 @@ const Game = (() => {
     const overlay = document.getElementById("objective-overlay");
     if (!toast || !imgEl) return;
 
-    imgEl.src = `assets/next_task_screen/task ${taskIndex}.png`;
-    imgEl.style.display = "block";
+    // Hide image first to prevent flash of old task image
+    imgEl.style.display = "none";
 
-    // Reset classes sequentially to guarantee CSS transition re-trigger on mobile
-    toast.className = "";
-    toast.dataset.waitingForMove = "false";
-    if (overlay) overlay.classList.add("active");
+    const showToast = () => {
+      imgEl.style.display = "block";
 
-    requestAnimationFrame(() => {
+      // Reset classes sequentially to guarantee CSS transition re-trigger on mobile
+      toast.className = "";
+      toast.dataset.waitingForMove = "false";
+      if (overlay) overlay.classList.add("active");
+
       requestAnimationFrame(() => {
-        toast.className = "toast-center";
+        requestAnimationFrame(() => {
+          toast.className = "toast-center";
+        });
       });
-    });
 
-    if (toast.toastTimer) clearTimeout(toast.toastTimer);
-    toast.toastTimer = setTimeout(() => {
-      // After 3 seconds, wait for the player to move before dismissing
-      toast.dataset.waitingForMove = "true";
-    }, 3000);
+      if (toast.toastTimer) clearTimeout(toast.toastTimer);
+      toast.toastTimer = setTimeout(() => {
+        // After 3 seconds, wait for the player to move before dismissing
+        toast.dataset.waitingForMove = "true";
+      }, 3000);
+    };
+
+    // Use preloaded image from cache for instant display
+    const cachedImg = taskImageCache[taskIndex];
+    if (cachedImg && cachedImg.complete) {
+      // Image already loaded — swap and show instantly
+      imgEl.src = cachedImg.src;
+      showToast();
+    } else {
+      // Fallback: load on demand (shouldn't happen since we preload)
+      imgEl.src = `assets/next_task_screen/task ${taskIndex}.png`;
+      imgEl.onload = () => {
+        showToast();
+      };
+      // If it fails to load, still show the toast after a short delay
+      imgEl.onerror = () => {
+        showToast();
+      };
+    }
   }
 
   function playInteractionSound() {
