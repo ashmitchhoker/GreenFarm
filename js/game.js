@@ -138,18 +138,18 @@ const Game = (() => {
           const p = bgMusic.play();
           if (p !== undefined) p.catch(() => {});
         } catch (e) {}
-        
-        ['interactionSound', 'taskDoneSound'].forEach(id => {
-           const a = document.getElementById(id);
-           if (a) {
-              try {
-                const ap = a.play();
-                if (ap !== undefined) ap.catch(()=>{});
-                // Synchronously pause to unlock without playing the sound
-                a.pause();
-                if (a.readyState > 0) a.currentTime = 0;
-              } catch(e) {}
-           }
+
+        ["interactionSound", "taskDoneSound"].forEach((id) => {
+          const a = document.getElementById(id);
+          if (a) {
+            try {
+              const ap = a.play();
+              if (ap !== undefined) ap.catch(() => {});
+              // Synchronously pause to unlock without playing the sound
+              a.pause();
+              if (a.readyState > 0) a.currentTime = 0;
+            } catch (e) {}
+          }
         });
 
         window.removeEventListener("pointerdown", startAudio, true);
@@ -169,7 +169,7 @@ const Game = (() => {
 
     // Initial delay for UI so toast isn't hidden by preloader fade out
     setTimeout(() => {
-        updateTaskUI();
+      updateTaskUI();
     }, 600);
 
     requestAnimationFrame(loop);
@@ -358,7 +358,10 @@ const Game = (() => {
             };
 
             if (activeItem.type === "tree") {
-              const treeTypeIdx = activeItem.treeType !== undefined ? activeItem.treeType : Math.floor(Math.random() * 3);
+              const treeTypeIdx =
+                activeItem.treeType !== undefined
+                  ? activeItem.treeType
+                  : Math.floor(Math.random() * 3);
               Objects.trees.push({
                 x: wx - 30,
                 y: wy + 10,
@@ -381,7 +384,12 @@ const Game = (() => {
               if (activeItem.type === "mud_house") {
                 state.tasks.housesBuilt++;
                 state.score -= activeItem.cost;
-                Particles.spawnFloat(wx, wy, `House Built! -${activeItem.cost} Coins`, "#4ade80");
+                Particles.spawnFloat(
+                  wx,
+                  wy,
+                  `House Built! -${activeItem.cost} Coins`,
+                  "#4ade80",
+                );
 
                 // Mark the nearest placeholder as filled so we don't snap to it anymore
                 for (let b of Objects.barriers) {
@@ -567,7 +575,9 @@ const Game = (() => {
     const audio = document.getElementById("interactionSound");
     if (audio) {
       if (audio.readyState > 0) {
-        try { audio.currentTime = 0; } catch(e) {}
+        try {
+          audio.currentTime = 0;
+        } catch (e) {}
       }
       audio.volume = 0.5;
       try {
@@ -581,7 +591,9 @@ const Game = (() => {
     const audio = document.getElementById("taskDoneSound");
     if (audio) {
       if (audio.readyState > 0) {
-        try { audio.currentTime = 0; } catch(e) {}
+        try {
+          audio.currentTime = 0;
+        } catch (e) {}
       }
       audio.volume = 0.6;
       try {
@@ -642,10 +654,10 @@ const Game = (() => {
       return;
     }
 
-    // Dismiss objective toast if waiting for move and player is moving
+    // Dismiss objective toast if waiting for move and player is moving or tapped
     const toast = document.getElementById("objective-toast");
     if (toast && toast.dataset.waitingForMove === "true") {
-      if (Input.dir.x !== 0 || Input.dir.y !== 0) {
+      if (Input.dir.x !== 0 || Input.dir.y !== 0 || Input.mouseClicked) {
         toast.dataset.waitingForMove = "false";
         if (toast.className === "toast-center") {
           toast.className = "toast-corner";
@@ -839,7 +851,7 @@ const Game = (() => {
                   cx,
                   cy - 20,
                   "Truck Dispatched!",
-                  "#4ade80"
+                  "#4ade80",
                 );
               } else {
                 pts = 0;
@@ -859,12 +871,7 @@ const Game = (() => {
             state.tasks.trashCollected += thrown;
             state.inventory.trash = 0;
             pts = thrown * 2; // 2 coins per trash thrown in bin
-            Particles.spawnFloat(
-              cx,
-              cy - 20,
-              "Trash Deposited!",
-              "#4ade80"
-            );
+            Particles.spawnFloat(cx, cy - 20, "Trash Deposited!", "#4ade80");
             Particles.spawnCoin(cx, cy - 60, pts);
             updateTaskUI();
           } else if (nearest.type === "trashcan_plastic") {
@@ -873,12 +880,7 @@ const Game = (() => {
             state.tasks.bottlesCollected += thrown;
             state.inventory.bottles = 0;
             pts = thrown * 2;
-            Particles.spawnFloat(
-              cx,
-              cy - 20,
-              "Bottles Deposited!",
-              "#4ade80"
-            );
+            Particles.spawnFloat(cx, cy - 20, "Bottles Deposited!", "#4ade80");
             Particles.spawnCoin(cx, cy - 60, pts);
             updateTaskUI();
           } else if (nearest.type === "windmill") {
@@ -889,12 +891,7 @@ const Game = (() => {
               state.tasks.windmillsStarted++;
               pts = 2;
 
-              Particles.spawnFloat(
-                cx,
-                cy - 20,
-                "Windmill Active!",
-                "#4ade80"
-              );
+              Particles.spawnFloat(cx, cy - 20, "Windmill Active!", "#4ade80");
               Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             }
@@ -905,12 +902,7 @@ const Game = (() => {
               nearest.interactLabel = ""; // Disabled further interactions
               state.tasks.factoriesServiced++;
               pts = 5;
-              Particles.spawnFloat(
-                cx,
-                cy - 20,
-                "Factory Serviced!",
-                "#4ade80"
-              );
+              Particles.spawnFloat(cx, cy - 20, "Factory Serviced!", "#4ade80");
               Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             }
@@ -921,12 +913,7 @@ const Game = (() => {
               nearest.interactLabel = "";
               state.tasks.oilSpillsCleaned++;
               pts = 3;
-              Particles.spawnFloat(
-                cx,
-                cy - 20,
-                "Spill Cleaned!",
-                "#4ade80"
-              );
+              Particles.spawnFloat(cx, cy - 20, "Spill Cleaned!", "#4ade80");
               Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             }
@@ -937,12 +924,7 @@ const Game = (() => {
               nearest.interactLabel = ""; // Disabled further interactions
               state.tasks.lightsTurnedOff++;
               pts = 1;
-              Particles.spawnFloat(
-                cx,
-                cy - 20,
-                "Light turned off!",
-                "#4ade80"
-              );
+              Particles.spawnFloat(cx, cy - 20, "Light turned off!", "#4ade80");
               Particles.spawnCoin(cx, cy - 60, pts);
               updateTaskUI();
             }
@@ -955,7 +937,12 @@ const Game = (() => {
                 nearest.timer = 999999;
                 nearest.interactLabel = "";
                 pts = 0;
-                Particles.spawnFloat(cx, cy - 20, "PUC Done! -5 Coins", "#4ade80");
+                Particles.spawnFloat(
+                  cx,
+                  cy - 20,
+                  "PUC Done! -5 Coins",
+                  "#4ade80",
+                );
                 updateTaskUI();
               } else {
                 pts = 0;
@@ -1009,7 +996,12 @@ const Game = (() => {
               state.score += 5;
               state.totalCleaned++;
               playInteractionSound();
-              Particles.spawnFloat(obj.x + obj.w / 2, obj.y - 40, "Trash Collected!", "#4ade80");
+              Particles.spawnFloat(
+                obj.x + obj.w / 2,
+                obj.y - 40,
+                "Trash Collected!",
+                "#4ade80",
+              );
               Particles.spawnCoin(obj.x + obj.w / 2, obj.y - 80, 5);
               updateTaskUI();
             }
@@ -1042,8 +1034,10 @@ const Game = (() => {
           if (d < 250) {
             const hintEl = document.getElementById("interaction-hint");
             hintEl.classList.add("visible");
-            hintEl.innerHTML = CONFIG.IS_TOUCH ? `Tap <strong>E</strong> to drive car` : `Press <strong>E</strong> to drive car`;
-            
+            hintEl.innerHTML = CONFIG.IS_TOUCH
+              ? `Tap <strong>E</strong> to drive car`
+              : `Press <strong>E</strong> to drive car`;
+
             if (Input.interact) {
               state.pucState = 1;
               Input.consumeInteract();
@@ -1052,7 +1046,7 @@ const Game = (() => {
                 gCar.x + gCar.w / 2,
                 gCar.y,
                 "Driving to Gas Station...",
-                "#4ade80"
+                "#4ade80",
               );
             }
           }
