@@ -210,9 +210,29 @@
     </div>
 
     <div id="stats">
-      <img src="assets/coins/coin_5.png" style="width: 80px; height: 80px; vertical-align: middle; object-fit: contain; margin-right: -15px; margin-left: -15px;" />
-      <span id="score-display" style="font-weight: bold; font-size: 36px; color: #facc15; vertical-align: middle; text-shadow: 2px 2px 4px rgba(0,0,0,0.9);">0</span>
-      <span id="actions-display" style="display: none;"></span>
+      <img
+        src="assets/coins/coin_5.png"
+        style="
+          width: 80px;
+          height: 80px;
+          vertical-align: middle;
+          object-fit: contain;
+          margin-right: -15px;
+          margin-left: -15px;
+        "
+      />
+      <span
+        id="score-display"
+        style="
+          font-weight: bold;
+          font-size: 36px;
+          color: #facc15;
+          vertical-align: middle;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+        "
+        >0</span
+      >
+      <span id="actions-display" style="display: none"></span>
     </div>
 
     <!-- Interaction hint -->
@@ -253,18 +273,27 @@
         justify-content: center;
         transition: transform 0.15s ease;
       "
-      onmouseover="this.style.transform='scale(1.05)'"
-      onmouseout="this.style.transform='scale(1)'"
+      onmouseover="this.style.transform = 'scale(1.05)'"
+      onmouseout="this.style.transform = 'scale(1)'"
     >
       <img
         src="assets/shop/shop_logo.png"
         alt="SHOP"
-        style="width: 90px; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.8)); pointer-events: none; margin-bottom: -62px; z-index: 2;"
+        style="
+          width: 90px;
+          filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.8));
+          pointer-events: none;
+          margin-bottom: -62px;
+          z-index: 2;
+        "
       />
       <img
         src="assets/shop/shop2.png"
         alt="Shop"
-        style="width: 100px; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.6));"
+        style="
+          width: 100px;
+          filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.6));
+        "
       />
       <span
         style="
@@ -465,7 +494,17 @@
 
     <!-- Objective Toast -->
     <div id="objective-toast">
-      <img id="objective-toast-img" src="" style="width: 100%; height: auto; display: none; filter: drop-shadow(0 15px 20px rgba(0,0,0,0.5));" />
+      <img
+        id="objective-toast-img"
+        src=""
+        style="
+          display: none;
+          filter: drop-shadow(0 15px 20px rgba(0, 0, 0, 0.5));
+          max-height: 75vh;
+          width: auto;
+          max-width: 90vw;
+        "
+      />
     </div>
 
     <!-- Scripts (order matters: config → utils → subsystems → renderer → game) -->

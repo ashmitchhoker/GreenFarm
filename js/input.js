@@ -42,13 +42,22 @@ const Input = (() => {
     },
     { capture: true },
   );
+  let touchClickPending = false;
+
   window.addEventListener(
     "touchstart",
     (e) => {
       if (e.touches.length === 1) {
         mousePos.x = e.touches[0].clientX;
         mousePos.y = e.touches[0].clientY;
-        mouseClicked = true;
+
+        // Ensure standard touch taps are tracked only on the game canvas
+        // This avoids accidental placements when touching UI elements
+        if (e.target && e.target.id === "game") {
+          touchClickPending = true;
+        } else {
+          touchClickPending = false;
+        }
       }
     },
     { passive: true, capture: true },
@@ -66,7 +75,22 @@ const Input = (() => {
   window.addEventListener(
     "touchend",
     (e) => {
-      mouseClicked = false;
+      // Allow drag to place on mobile by deferring the click to the touch release
+      if (touchClickPending && !joystickActive) {
+        if (e.changedTouches && e.changedTouches.length > 0) {
+          mousePos.x = e.changedTouches[0].clientX;
+          mousePos.y = e.changedTouches[0].clientY;
+        }
+        mouseClicked = true;
+
+        // Auto-clear click state shortly after to act as an instantaneous click
+        setTimeout(() => {
+          mouseClicked = false;
+        }, 50);
+      } else {
+        mouseClicked = false;
+      }
+      touchClickPending = false;
     },
     { passive: true, capture: true },
   );

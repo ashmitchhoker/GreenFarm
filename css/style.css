@@ -48,16 +48,20 @@ body {
   top: 60px;
   left: 20px;
   transform: scale(0);
-  
+
   z-index: 2500;
   pointer-events: none;
   opacity: 0;
   box-sizing: border-box;
-  width: 90vw;
+  width: auto;
   max-width: 600px;
+  text-align: center;
 }
 
-
+#objective-toast-img {
+  max-width: 100%;
+  height: auto;
+}
 
 #objective-toast.toast-center {
   top: 50%;
@@ -283,6 +287,20 @@ canvas#game {
 
 /* ── Responsive tweaks ────────────────────────────────── */
 @media (max-width: 1024px), (max-height: 500px) {
+  #objective-toast {
+    width: auto;
+    max-width: 85vw;
+  }
+  #objective-toast-img {
+    max-height: 70vh;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  #objective-toast.toast-center {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
   #hud {
     padding: 4px 8px;
     justify-content: center;
