@@ -997,8 +997,11 @@ const Game = (() => {
           state.score += pts;
           state.totalCleaned++;
         }
-        Input.consumeInteract();
       }
+
+      // Always consume interact intent at the end of the input frame
+      // so it doesn't queue and arbitrarily trigger on next zone entry
+      Input.consumeInteract();
     }
 
     // Factory smoke and truck movement
@@ -1072,7 +1075,6 @@ const Game = (() => {
 
             if (Input.interact) {
               state.pucState = 1;
-              Input.consumeInteract();
               playInteractionSound();
               Particles.spawnFloat(
                 gCar.x + gCar.w / 2,
@@ -1082,6 +1084,7 @@ const Game = (() => {
               );
             }
           }
+          if (Input.interact) Input.consumeInteract();
         } else if (state.pucState === 1) {
           let speed = 250;
           if (gCar.x < 1580 && gCar.y > 500) {
@@ -1129,6 +1132,12 @@ const Game = (() => {
       overlay.classList.add("active");
     }
     */
+
+    // Always consume interact at the end of the frame regardless of whether it was used
+    // This prevents queuing an interaction to unintentionally fire when entering a new task zone
+    if (Input.interact) {
+      Input.consumeInteract();
+    }
   }
 
   function showGameOverScreen() {
