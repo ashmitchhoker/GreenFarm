@@ -998,10 +998,6 @@ const Game = (() => {
           state.totalCleaned++;
         }
       }
-
-      // Always consume interact intent at the end of the input frame
-      // so it doesn't queue and arbitrarily trigger on next zone entry
-      Input.consumeInteract();
     }
 
     // Factory smoke and truck movement
@@ -1082,9 +1078,9 @@ const Game = (() => {
                 "Driving to Gas Station...",
                 "#4ade80",
               );
+              Input.consumeInteract();
             }
           }
-          if (Input.interact) Input.consumeInteract();
         } else if (state.pucState === 1) {
           let speed = 250;
           if (gCar.x < 1580 && gCar.y > 500) {
